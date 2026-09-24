@@ -1,1 +1,1 @@
-# MTM-Pro: Compounding-Error-Resilient World Models, from Robots to Chaos
+# MTM-Pro: From Contraction to Chaos: World Models for Robots that Resist Compounding Error
