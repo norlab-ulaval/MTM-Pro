@@ -213,10 +213,6 @@ def save_multistep_replaybuffer_with_spec(
     # Capture cwd at entry so we can restore it on exit regardless of outcome
     entry_cwd = os.getcwd()
 
-    #  Dev note: run/debug/test cwd for component using `hydra compose` instead of `hydra main`
-    #  when developping in remote dev mode trough ssh in Dockerized-AnonLab container:
-    #       cwd='/home/non-interactive-ros2/tmp/MTM-Pro/src'
-
     # .... Setup ..................................................................................
     hydra_experiment_cwd = get_hydra_experiment_cwd(cfg)
     hydra_orginal_cwd = get_hydra_original_cwd(cfg)

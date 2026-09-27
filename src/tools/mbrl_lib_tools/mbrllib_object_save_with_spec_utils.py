@@ -86,10 +86,6 @@ def save_mbrllib_objects_and_env_spec(
     :return: The path to the mbrl data root
     """
 
-    #  Dev note: run/debug/test cwd for component using `hydra compose` instead of `hydra main`
-    #  when developping in remote dev mode trough ssh in Dockerized-AnonLab container:
-    #       cwd='/home/non-interactive-ros2/tmp/MTM-Pro/src'
-
     # .... Setup ..................................................................................
     hydra_experiment_cwd = get_hydra_experiment_cwd(cfg)
     hydra_orginal_cwd = get_hydra_original_cwd(cfg)
