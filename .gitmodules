@@ -1,0 +1,9 @@
+[submodule "utilities/math-gymnasium"]
+	path = utilities/math-gymnasium
+	url = https://github.com/norlab-ulaval/math-gymnasium.git
+[submodule "utilities/trajectory-container-tools"]
+	path = utilities/trajectory-container-tools
+	url = https://github.com/norlab-ulaval/trajectory-container-tools.git
+[submodule "utilities/mbrl-lib"]
+	path = utilities/mbrl-lib
+	url = https://github.com/RedLeader962/mbrl-lib.git

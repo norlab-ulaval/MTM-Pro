@@ -1,0 +1,57 @@
+# MTM-Pro standalone docker compose
+#
+# Usage (from the repository root, after `git submodule update --init --recursive`):
+#
+#   # Build the image
+#   $ docker compose -f docker/docker-compose.yaml build
+#
+#   # Open a shell in the container (CPU)
+#   $ docker compose -f docker/docker-compose.yaml run --rm mtm-pro
+#
+#   # Same, with NVIDIA GPU passthrough (requires the NVIDIA container toolkit on the host)
+#   $ docker compose -f docker/docker-compose.yaml run --rm mtm-pro-gpu
+#
+#   # Run one experiment directly
+#   $ docker compose -f docker/docker-compose.yaml run --rm mtm-pro-gpu \
+#       python launcher/math_env_main.py --multirun \
+#         --config-dir=launcher/configs/multirun_overrides/math_env/RLRP-757-E4b-low-global-noise \
+#         --config-name=math_env_main_multirun_RLRP-757-DMtmPro-MS+CP
+#
+# The repository is bind mounted over the image copy so that `artifact/` (experiment outputs) and
+# `data/` (datasets + generated caches) persist on the host and source edits are live.
+
+name: mtm-pro
+
+x-mtm-pro-common: &mtm-pro-common
+  image: mtm-pro:latest
+  build:
+    context: ..
+    dockerfile: docker/Dockerfile
+  working_dir: /opt/MTM-Pro/src
+  environment:
+    DN_PROJECT_PATH: /opt/MTM-Pro
+    DN_PROJECT_USER: mtm-pro
+    HPO_N_JOBS: ${HPO_N_JOBS:-1}
+    MPLBACKEND: Agg
+  volumes:
+    - ..:/opt/MTM-Pro
+  ipc: host
+  shm_size: "8gb"
+  stdin_open: true
+  tty: true
+
+services:
+  mtm-pro:
+    <<: *mtm-pro-common
+    container_name: mtm-pro
+
+  mtm-pro-gpu:
+    <<: *mtm-pro-common
+    container_name: mtm-pro-gpu
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

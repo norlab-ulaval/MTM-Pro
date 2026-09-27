@@ -1,0 +1,80 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mtm-pro"
+dynamic = ["version"]
+description = "MTM-Pro: From Contraction to Chaos: World Models for Robots that Resist Compounding Error -- standalone experiment release"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+    { name = "Anonymous Authors" }
+]
+keywords = [
+    "robotics",
+    "world-models",
+    "dynamics-learning",
+    "multi-step-prediction",
+    "research",
+]
+classifiers = [
+    "Development Status :: 3 - Beta",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+
+# Note: the runtime environment is defined by `docker/Dockerfile` + `docker/requirements.txt`.
+# The three `utilities/*` git submodules (mbrl-lib fork, math-gymnasium, trajectory-container-tools)
+# are installed in editable mode by the Dockerfile (`pip install --no-deps --editable .` for MTM-Pro
+# itself, so the git requirements below are NOT resolved there and never override the editable
+# installs). They are declared for a plain `pip install .` outside docker: the packages are not
+# published on PyPI yet, so they are pulled from git, pinned to the same `ICLR-SUBMISSION-V1` tag
+# as the submodules.
+dependencies = [
+    "trajectory-container-tools[ros,dev] @ git+https://github.com/norlab-ulaval/trajectory-container-tools.git@ICLR-SUBMISSION-V1",
+    "math-gymnasium[dev] @ git+https://github.com/norlab-ulaval/math-gymnasium.git@ICLR-SUBMISSION-V1",
+    "mbrl[dev] @ git+https://github.com/RedLeader962/mbrl-lib.git@ICLR-SUBMISSION-V1",
+    "numpy<2",
+    "pandas",
+    "scipy",
+    "torch",
+    "pypose",
+    "omegaconf",
+    "hydra-core",
+    "hydra-joblib-launcher",
+    "optuna>=4.0,<5",
+    "matplotlib",
+    "tqdm",
+    "deprecated",
+    "h5py",
+    "pyyaml",
+    "termcolor",
+    "tensorboard",
+    "torchmetrics",
+    "gymnasium",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-mock",
+    "pytest-env",
+    "pytest-xdist",
+    "flake8",
+    "black",
+]
+
+[tool.setuptools.packages.find]
+# src-layout repository structure where "." is the repository root and "src" is the source code location.
+where = [
+    ".",
+    "src"
+]
+exclude = [
+    "*/build",
+    "*/install",
+    "*/log"
+]

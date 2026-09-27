@@ -1,0 +1,18 @@
+# Files/directories excluded from the docker build context (see docker/Dockerfile).
+# Note: `artifact/` and `data/` are bind mounted at runtime by docker/docker-compose.yaml.
+.git
+.idea
+.junie
+.aiignore
+artifact/*
+!artifact/README.md
+data/external_data/*
+data/data_consolidated/*
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/*.egg-info
+**/*.log
+**/.DS_Store
+.background_output_*.txt
+.output.txt

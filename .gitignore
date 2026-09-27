@@ -1,0 +1,30 @@
+# ====Experiment outputs===========================================================================
+artifact/*
+!artifact/README.md
+
+# ====Data=========================================================================================
+# The paper datasets (csv) and the consolidated figure data are versioned. Generated caches are not.
+**/ms_replaybuffer/
+data/external_data/**/rosbags/
+**/*.csv.lock
+
+# ====Python=======================================================================================
+**/__pycache__
+**/*.pyc
+**/*.egg-info/
+**/.pytest_cache/
+**/.benchmarks
+
+# ====IDE==========================================================================================
+.idea/
+*.iml
+.vscode
+
+# ====Log / OS=====================================================================================
+**/*.log
+**/*.out
+out/
+**/.DS_Store
+/.output.txt
+/.background_output_*.txt
+/.junie/
