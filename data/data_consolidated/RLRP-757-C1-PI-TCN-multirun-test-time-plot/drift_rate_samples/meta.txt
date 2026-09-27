@@ -1,0 +1,96 @@
+# RLRP-818 experiment data consolidation -- METRIC level meta (drift_rate_samples)
+
+generated_at: 2026-09-25T11:24:51-04:00
+metric: drift_rate_samples
+producer: generate_fct._generate_drift_rate_plot_single
+hook: src/pipeline/pipeline_utils/multirun_testtime_rollout_plot_pipeline_utils/generate_fct.py: after the warm-up trimming, before `ax.plot`
+schema_version: 2.2
+param.drift_type: timesteps
+param.unit: m
+param.mae_feature_reduction: mean
+param.mae_grp_reduction: median
+param.sample_reduction: none
+param.sample_identity: rollout
+param.float_format: repr
+param.timestep_stride: None
+param.horizon_ratio_map: {0.25: 716, 0.5: 1231, 0.75: 1747, 1.0: 2262}
+param.warmup_end: 200
+param.horizon_length: 2062
+param.length_cutoff: 2262
+param.selected_trajectories: None
+param.max_len: 2262
+param.warmup_mode: discard
+param.warmup_steps: 200
+param.timestamp_scale: 0.01
+param.timestamp_unit: s
+param.trials_label: models
+param.trajectory_name_mapping: {1: 'ellipse_1', 2: 'ellipse_2', 3: 'extended_lemniscate', 4: 'lemniscate', 5: 'parabola', 6: 'transposed_parabola', 7: 'warped_ellipse_1', 8: 'warped_ellipse_2'}
+param.trajectory_ids_per_group: {'AR-TCN-CudaG': [1, 2, 3, 4, 5, 6, 7, 8], 'AR-TCN-bf16-CudaG': [1, 2, 3, 4, 5, 6, 7, 8], 'E2E-TCN-bf16-F500': [1, 2, 3, 4, 5, 6, 7, 8], '(ours) Dist-MTM-Pro-MS+CP-fast-CudaG': [1, 2, 3, 4, 5, 6, 7, 8]}
+param.seed_key_mapping: {'AR-TCN-CudaG': {1: ['artifact/ICRA2026/RLRP-757-PI-TCN-C1/TCN+cudagraph/2026.09.23/131301819921', 'A_trj_len={HI:20,HO:10},trial_nb=1'], 2: ['artifact/ICRA2026/RLRP-757-PI-TCN-C1/TCN+cudagraph/2026.09.23/131301819921', 'A_trj_len={HI:20,HO:10},trial_nb=2'], 3: ['artifact/ICRA2026/RLRP-757-PI-TCN-C1/TCN+cudagraph/2026.09.23/131301821096', 'A_trj_len={HI:20,HO:10},trial_nb=1'], 4: ['artifact/ICRA2026/RLRP-757-PI-TCN-C1/TCN+cudagraph/2026.09.23/131301821096', 'A_trj_len={HI:20,HO:10},trial_nb=2'], 5: ['artifact/ICRA2026/RLRP-757-PI-TCN-C1/TCN+cudagraph/2026.09.23/162627372241', 'A_trj_len={HI:20,HO:10},trial_nb=1'], 6: ['artifact/ICRA2026/RLRP-757-PI-TCN-C1/TCN+cudagraph/2026.09.23/162627372241', 'A_trj_len={HI:20,HO:10},trial_nb=2'], 7: ['artifact/ICRA2026/RLRP-757-PI-TCN-C1/TCN+cudagraph/2026.09.23/162949870433', 'A_trj_len={HI:20,HO:10},trial_nb=1'], 8: ['artifact/ICRA2026/RLRP-757-PI-TCN-C1/TCN+cudagraph/2026.09.23/162949870433', 'A_trj_len={HI:20,HO:10},trial_nb=2']}, 'AR-TCN-bf16-CudaG': {1: ['artifact/ICRA2026/RLRP-757-PI-TCN-C1/TCN-bf16+cudagraph/2026.09.23/003507252923', 'A_trj_len={HI:20,HO:10},trial_nb=1'], 2: ['artifact/ICRA2026/RLRP-757-PI-TCN-C1/TCN-bf16+cudagraph/2026.09.23/003507252923', 'A_trj_len={HI:20,HO:10},trial_nb=2'], 3: ['artifact/ICRA2026/RLRP-757-PI-TCN-C1/TCN-bf16+cudagraph/2026.09.23/003507252923', 'A_trj_len={HI:20,HO:10},trial_nb=3'], 4: ['artifact/ICRA2026/RLRP-757-PI-TCN-C1/TCN-bf16+cudagraph/2026.09.23/003507252923', 'A_trj_len={HI:20,HO:10},trial_nb=4'], 5: ['artifact/ICRA2026/RLRP-757-PI-TCN-C1/TCN-bf16+cudagraph/2026.09.23/003507255899', 'A_trj_len={HI:20,HO:10},trial_nb=1'], 6: ['artifact/ICRA2026/RLRP-757-PI-TCN-C1/TCN-bf16+cudagraph/2026.09.23/003507255899', 'A_trj_len={HI:20,HO:10},trial_nb=2'], 7: ['artifact/ICRA2026/RLRP-757-PI-TCN-C1/TCN-bf16+cudagraph/2026.09.23/003507255899', 'A_trj_len={HI:20,HO:10},trial_nb=3'], 8: ['artifact/ICRA2026/RLRP-757-PI-TCN-C1/TCN-bf16+cudagraph/2026.09.23/003507255899', 'A_trj_len={HI:20,HO:10},trial_nb=4']}, 'E2E-TCN-bf16-F500': {1: ['artifact/ICRA2026/RLRP-757-PI-TCN-C1/E2E-TCN-F500/2026.09.23/003448631178', 'A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=1'], 2: ['artifact/ICRA2026/RLRP-757-PI-TCN-C1/E2E-TCN-F500/2026.09.23/003448631178', 'A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=2'], 3: ['artifact/ICRA2026/RLRP-757-PI-TCN-C1/E2E-TCN-F500/2026.09.23/003449747265', 'A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=1'], 4: ['artifact/ICRA2026/RLRP-757-PI-TCN-C1/E2E-TCN-F500/2026.09.23/003449747265', 'A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=2'], 5: ['artifact/ICRA2026/RLRP-757-PI-TCN-C1/E2E-TCN-F500/2026.09.23/003455374890', 'A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=1'], 6: ['artifact/ICRA2026/RLRP-757-PI-TCN-C1/E2E-TCN-F500/2026.09.23/003455374890', 'A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=2'], 7: ['artifact/ICRA2026/RLRP-757-PI-TCN-C1/E2E-TCN-F500/2026.09.23/003455379914', 'A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=1'], 8: ['artifact/ICRA2026/RLRP-757-PI-TCN-C1/E2E-TCN-F500/2026.09.23/003455379914', 'A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=2']}, '(ours) Dist-MTM-Pro-MS+CP-fast-CudaG': {1: ['artifact/ICRA2026/RLRP-757-PI-TCN-C1/DMtm-Pro-MS+CP+cudagraph-C1a/2026.09.23/023024668518', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=1'], 2: ['artifact/ICRA2026/RLRP-757-PI-TCN-C1/DMtm-Pro-MS+CP+cudagraph-C1a/2026.09.23/023024668518', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=2'], 3: ['artifact/ICRA2026/RLRP-757-PI-TCN-C1/DMtm-Pro-MS+CP+cudagraph-C1a/2026.09.23/023024668518', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=3'], 4: ['artifact/ICRA2026/RLRP-757-PI-TCN-C1/DMtm-Pro-MS+CP+cudagraph-C1a/2026.09.23/023024668518', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=4'], 5: ['artifact/ICRA2026/RLRP-757-PI-TCN-C1/DMtm-Pro-MS+CP+cudagraph-C1a/2026.09.23/023024673101', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=1'], 6: ['artifact/ICRA2026/RLRP-757-PI-TCN-C1/DMtm-Pro-MS+CP+cudagraph-C1a/2026.09.23/023024673101', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=2'], 7: ['artifact/ICRA2026/RLRP-757-PI-TCN-C1/DMtm-Pro-MS+CP+cudagraph-C1a/2026.09.23/023024673101', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=3'], 8: ['artifact/ICRA2026/RLRP-757-PI-TCN-C1/DMtm-Pro-MS+CP+cudagraph-C1a/2026.09.23/023024673101', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=4']}}
+param.n_seeds: {'AR-TCN-CudaG': 8, 'AR-TCN-bf16-CudaG': 8, 'E2E-TCN-bf16-F500': 8, '(ours) Dist-MTM-Pro-MS+CP-fast-CudaG': 8}
+param.n_rollouts: {'AR-TCN-CudaG': 64, 'AR-TCN-bf16-CudaG': 64, 'E2E-TCN-bf16-F500': 64, '(ours) Dist-MTM-Pro-MS+CP-fast-CudaG': 64}
+param.missing_cells: {'AR-TCN-CudaG': 0, 'AR-TCN-bf16-CudaG': 0, 'E2E-TCN-bf16-F500': 0, '(ours) Dist-MTM-Pro-MS+CP-fast-CudaG': 0}
+
+csv_columns:
+  - timestep
+  - timestamp
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+
+grp_name_to_slug:
+  - '(ours) Dist-MTM-Pro-MS+CP-fast-CudaG' -> ours_Dist-MTM-Pro-MS+CP-fast-CudaG
+  - 'AR-TCN-CudaG' -> AR-TCN-CudaG
+  - 'AR-TCN-bf16-CudaG' -> AR-TCN-bf16-CudaG
+  - 'E2E-TCN-bf16-F500' -> E2E-TCN-bf16-F500
+
+group_metadata:
+  - '(ours) Dist-MTM-Pro-MS+CP-fast-CudaG': short_name=(ours) MTM-Pro-cg, n_trials=8, n_trajectories=8, n_rollouts=64
+  - 'AR-TCN-CudaG': short_name=AR-TCN-cg, n_trials=8, n_trajectories=8, n_rollouts=64
+  - 'AR-TCN-bf16-CudaG': short_name=AR-TCN-bf16-cg, n_trials=8, n_trajectories=8, n_rollouts=64
+  - 'E2E-TCN-bf16-F500': short_name=E2E-TCN-bf16-F500, n_trials=8, n_trajectories=8, n_rollouts=64
+
+source_experiments:
+  - '(ours) Dist-MTM-Pro-MS+CP-fast-CudaG': {'ttrpm_dir': 'TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Distributional_MTM-Pro_PR_rolloutFalse', 'experiments': [{'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-C1/DMtm-Pro-MS+CP+cudagraph-C1a/2026.09.23/023024668518', 'multirun_paths': ['A_trj_len={HI:20,HO:10,U:10},trial_nb=1', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=2', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=3', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=4']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-C1/DMtm-Pro-MS+CP+cudagraph-C1a/2026.09.23/023024673101', 'multirun_paths': ['A_trj_len={HI:20,HO:10,U:10},trial_nb=1', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=2', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=3', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=4']}]}
+  - 'AR-TCN-CudaG': {'ttrpm_dir': 'TTRPM_TCN_Deterministic_Auto-regressive_MS_unroll_model_PR_rolloutFalse', 'experiments': [{'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-C1/TCN+cudagraph/2026.09.23/131301819921', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-C1/TCN+cudagraph/2026.09.23/131301821096', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-C1/TCN+cudagraph/2026.09.23/162627372241', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-C1/TCN+cudagraph/2026.09.23/162949870433', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2']}]}
+  - 'AR-TCN-bf16-CudaG': {'ttrpm_dir': 'TTRPM_TCN_Deterministic_Auto-regressive_MS_unroll_model_PR_rolloutFalse', 'experiments': [{'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-C1/TCN-bf16+cudagraph/2026.09.23/003507252923', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2', 'A_trj_len={HI:20,HO:10},trial_nb=3', 'A_trj_len={HI:20,HO:10},trial_nb=4']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-C1/TCN-bf16+cudagraph/2026.09.23/003507255899', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2', 'A_trj_len={HI:20,HO:10},trial_nb=3', 'A_trj_len={HI:20,HO:10},trial_nb=4']}]}
+  - 'E2E-TCN-bf16-F500': {'ttrpm_dir': 'TTRPM_End-to-End-TCN_one-shot_MS-MS_forecast_baseline_PR_rolloutFalse', 'experiments': [{'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-C1/E2E-TCN-F500/2026.09.23/003448631178', 'multirun_paths': ['A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=1', 'A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=2']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-C1/E2E-TCN-F500/2026.09.23/003449747265', 'multirun_paths': ['A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=1', 'A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=2']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-C1/E2E-TCN-F500/2026.09.23/003455374890', 'multirun_paths': ['A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=1', 'A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=2']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-C1/E2E-TCN-F500/2026.09.23/003455379914', 'multirun_paths': ['A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=1', 'A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=2']}]}
+
+csv_files:
+  - AR-TCN-CudaG/seed_1_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-TCN-CudaG/seed_2_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-TCN-CudaG/seed_3_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-TCN-CudaG/seed_4_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-TCN-CudaG/seed_5_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-TCN-CudaG/seed_6_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-TCN-CudaG/seed_7_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-TCN-CudaG/seed_8_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-TCN-bf16-CudaG/seed_1_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-TCN-bf16-CudaG/seed_2_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-TCN-bf16-CudaG/seed_3_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-TCN-bf16-CudaG/seed_4_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-TCN-bf16-CudaG/seed_5_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-TCN-bf16-CudaG/seed_6_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-TCN-bf16-CudaG/seed_7_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-TCN-bf16-CudaG/seed_8_test_time_models_comparaison_drift_rate_samples.csv
+  - E2E-TCN-bf16-F500/seed_1_test_time_models_comparaison_drift_rate_samples.csv
+  - E2E-TCN-bf16-F500/seed_2_test_time_models_comparaison_drift_rate_samples.csv
+  - E2E-TCN-bf16-F500/seed_3_test_time_models_comparaison_drift_rate_samples.csv
+  - E2E-TCN-bf16-F500/seed_4_test_time_models_comparaison_drift_rate_samples.csv
+  - E2E-TCN-bf16-F500/seed_5_test_time_models_comparaison_drift_rate_samples.csv
+  - E2E-TCN-bf16-F500/seed_6_test_time_models_comparaison_drift_rate_samples.csv
+  - E2E-TCN-bf16-F500/seed_7_test_time_models_comparaison_drift_rate_samples.csv
+  - E2E-TCN-bf16-F500/seed_8_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS+CP-fast-CudaG/seed_1_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS+CP-fast-CudaG/seed_2_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS+CP-fast-CudaG/seed_3_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS+CP-fast-CudaG/seed_4_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS+CP-fast-CudaG/seed_5_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS+CP-fast-CudaG/seed_6_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS+CP-fast-CudaG/seed_7_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS+CP-fast-CudaG/seed_8_test_time_models_comparaison_drift_rate_samples.csv

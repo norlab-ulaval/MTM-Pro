@@ -1,0 +1,248 @@
+# RLRP-818 experiment data consolidation -- METRIC level meta (drift_rate)
+
+generated_at: 2026-09-22T09:49:38-04:00
+metric: drift_rate
+producer: generate_fct._generate_drift_rate_plot_single
+hook: src/pipeline/pipeline_utils/multirun_testtime_rollout_plot_pipeline_utils/generate_fct.py: after the warm-up trimming, before `ax.plot`
+schema_version: 2.2
+param.drift_type: timesteps
+param.unit: m
+param.dispersion_type: std-err
+param.logscale_band_method: percentile
+param.mae_grp_reduction: median
+param.mae_feature_reduction: mean
+param.length_cutoff: 4000
+param.selected_trajectories: None
+param.max_len: 4000
+param.warmup_mode: discard
+param.warmup_steps: 200
+param.y_axis_in_logscale: True
+param.x_axis_in_logscale: False
+param.timestamp_scale: None
+param.timestamp_unit: None
+param.trials_label: models
+
+csv_columns:
+  - timestep
+  - timestamp
+  - drift_rate
+  - drift_rate_lower
+  - drift_rate_upper
+
+grp_name_to_slug:
+  - '(ours) D-MTM-Pro-MS+CP' -> ours_D-MTM-Pro-MS+CP
+  - '(ours) D-MTM-Pro-MS+CP-fast-CudaG' -> ours_D-MTM-Pro-MS+CP-fast-CudaG
+  - '(ours) D-MTM-Pro-MS-fast-cudaG' -> ours_D-MTM-Pro-MS-fast-cudaG
+  - 'AR-GRU' -> AR-GRU
+  - 'AR-LSTM' -> AR-LSTM
+  - 'AR-MLP-Det' -> AR-MLP-Det
+  - 'AR-MLP-Prob' -> AR-MLP-Prob
+  - 'AR-TCN' -> AR-TCN
+  - 'AR-TCN-bf16-CudaG' -> AR-TCN-bf16-CudaG
+  - 'E2E-TCN' -> E2E-TCN
+  - 'E2E-TCN-F10' -> E2E-TCN-F10
+  - 'E2E-TCN-bf16-F1000' -> E2E-TCN-bf16-F1000
+  - 'M3' -> M3
+  - 'M3-F10' -> M3-F10
+  - 'M3-bf16-F1000' -> M3-bf16-F1000
+
+group_metadata:
+  - '(ours) D-MTM-Pro-MS+CP': short_name=(ours) MTM-Pro, n_trials=8, n_trajectories=3, n_rollouts=24
+  - '(ours) D-MTM-Pro-MS+CP-fast-CudaG': short_name=(ours) MTM-Pro-cg, n_trials=8, n_trajectories=3, n_rollouts=24
+  - '(ours) D-MTM-Pro-MS-fast-cudaG': short_name=(ours) MTM-Pro-MS-cg, n_trials=6, n_trajectories=3, n_rollouts=18
+  - 'AR-GRU': short_name=AR-GRU, n_trials=8, n_trajectories=3, n_rollouts=24
+  - 'AR-LSTM': short_name=AR-LSTM, n_trials=8, n_trajectories=3, n_rollouts=24
+  - 'AR-MLP-Det': short_name=AR-MLP-Det, n_trials=8, n_trajectories=3, n_rollouts=24
+  - 'AR-MLP-Prob': short_name=AR-MLP-Prob, n_trials=8, n_trajectories=3, n_rollouts=24
+  - 'AR-TCN': short_name=AR-TCN, n_trials=8, n_trajectories=3, n_rollouts=24
+  - 'AR-TCN-bf16-CudaG': short_name=AR-TCN-bf16-CudaG, n_trials=8, n_trajectories=3, n_rollouts=24
+  - 'E2E-TCN': short_name=E2E-TCN, n_trials=8, n_trajectories=3, n_rollouts=24
+  - 'E2E-TCN-F10': short_name=E2E-TCN, n_trials=8, n_trajectories=3, n_rollouts=24
+  - 'E2E-TCN-bf16-F1000': short_name=E2E-TCN-bf16-F1000, n_trials=8, n_trajectories=3, n_rollouts=24
+  - 'M3': short_name=M3, n_trials=8, n_trajectories=3, n_rollouts=24
+  - 'M3-F10': short_name=M3, n_trials=8, n_trajectories=3, n_rollouts=24
+  - 'M3-bf16-F1000': short_name=M3-bf16-F1000, n_trials=8, n_trajectories=3, n_rollouts=24
+
+source_experiments:
+  - '(ours) D-MTM-Pro-MS+CP': {'ttrpm_dir': 'TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Distributional_MTM-Pro_PR_rolloutFalse', 'experiments': [{'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/DMtmPro-MS+CP-E4b1/2026.09.12/003521167656', 'multirun_paths': ['A_trj_len={HI:20,HO:10,U:10},trial_nb=1', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=2']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/DMtmPro-MS+CP-E4b1/2026.09.12/003521168021', 'multirun_paths': ['A_trj_len={HI:20,HO:10,U:10},trial_nb=1', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=2']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/DMtmPro-MS+CP-E4b1/2026.09.12/003521177282', 'multirun_paths': ['A_trj_len={HI:20,HO:10,U:10},trial_nb=1', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=2']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/DMtmPro-MS+CP-E4b1/2026.09.12/003606432835', 'multirun_paths': ['A_trj_len={HI:20,HO:10,U:10},trial_nb=1', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=2']}]}
+  - '(ours) D-MTM-Pro-MS+CP-fast-CudaG': {'ttrpm_dir': 'TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Distributional_MTM-Pro_PR_rolloutFalse', 'experiments': [{'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/DMtmPro-MS+CP+cudagraph-E4b1/2026.09.20/215935276914', 'multirun_paths': ['A_trj_len={HI:20,HO:10,U:10},trial_nb=1', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=2', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=3', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=4']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/DMtmPro-MS+CP+cudagraph-E4b1/2026.09.20/221031559374', 'multirun_paths': ['A_trj_len={HI:20,HO:10,U:10},trial_nb=1', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=2', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=3', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=4']}]}
+  - '(ours) D-MTM-Pro-MS-fast-cudaG': {'ttrpm_dir': 'TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Distributional_MTM-Pro_PR_rolloutFalse', 'experiments': [{'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/DMtmPro-MS+cudagraph-E4b1/2026.09.20/221031559243', 'multirun_paths': ['A_trj_len={HI:20,HO:10,U:10},trial_nb=1', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=2', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=3', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=4', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=5', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=6', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=7', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=8']}]}
+  - 'AR-GRU': {'ttrpm_dir': 'TTRPM_GRU_Deterministic_Auto-regressive_MS_unroll_model_PR_rolloutFalse', 'experiments': [{'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/GRU/2026.09.12/003521073531', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2', 'A_trj_len={HI:20,HO:10},trial_nb=3', 'A_trj_len={HI:20,HO:10},trial_nb=4']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/GRU/2026.09.12/003521077332', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2', 'A_trj_len={HI:20,HO:10},trial_nb=3', 'A_trj_len={HI:20,HO:10},trial_nb=4']}]}
+  - 'AR-LSTM': {'ttrpm_dir': 'TTRPM_LSTM_Deterministic_Auto-regressive_MS_unroll_model_PR_rolloutFalse', 'experiments': [{'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/LSTM/2026.09.12/004011621115', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2', 'A_trj_len={HI:20,HO:10},trial_nb=3', 'A_trj_len={HI:20,HO:10},trial_nb=4']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/LSTM/2026.09.13/154027638861', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2', 'A_trj_len={HI:20,HO:10},trial_nb=3', 'A_trj_len={HI:20,HO:10},trial_nb=4']}]}
+  - 'AR-MLP-Det': {'ttrpm_dir': 'TTRPM_Deterministic_MLP_Auto-regressive_MS_unroll_model_PR_rolloutFalse', 'experiments': [{'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/AR-MLP-DET/2026.09.12/152519706318', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2', 'A_trj_len={HI:20,HO:10},trial_nb=3', 'A_trj_len={HI:20,HO:10},trial_nb=4']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/AR-MLP-DET/2026.09.12/152519710315', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2', 'A_trj_len={HI:20,HO:10},trial_nb=3', 'A_trj_len={HI:20,HO:10},trial_nb=4']}]}
+  - 'AR-MLP-Prob': {'ttrpm_dir': 'TTRPM_Probabilisitic_MLP_Auto-regressive_MS_unroll_model_PR_rolloutFalse', 'experiments': [{'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/AR-MLP-PROB/2026.09.12/152519781908', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2', 'A_trj_len={HI:20,HO:10},trial_nb=3', 'A_trj_len={HI:20,HO:10},trial_nb=4']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/AR-MLP-PROB/2026.09.12/153011952924', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2', 'A_trj_len={HI:20,HO:10},trial_nb=3', 'A_trj_len={HI:20,HO:10},trial_nb=4']}]}
+  - 'AR-TCN': {'ttrpm_dir': 'TTRPM_TCN_Deterministic_Auto-regressive_MS_unroll_model_PR_rolloutFalse', 'experiments': [{'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/TCN/2026.09.12/152519549682', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/TCN/2026.09.12/152519552920', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/TCN/2026.09.12/152519673254', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/TCN/2026.09.12/152519700100', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2']}]}
+  - 'AR-TCN-bf16-CudaG': {'ttrpm_dir': 'TTRPM_TCN_Deterministic_Auto-regressive_MS_unroll_model_PR_rolloutFalse', 'experiments': [{'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/TCN-bf16+cudagraph/2026.09.20/215935202183', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2', 'A_trj_len={HI:20,HO:10},trial_nb=3', 'A_trj_len={HI:20,HO:10},trial_nb=4']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/TCN-bf16+cudagraph/2026.09.20/215935202281', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2', 'A_trj_len={HI:20,HO:10},trial_nb=3', 'A_trj_len={HI:20,HO:10},trial_nb=4']}]}
+  - 'E2E-TCN': {'ttrpm_dir': 'TTRPM_End-to-End-TCN_one-shot_MS-MS_forecast_baseline_PR_rolloutFalse', 'experiments': [{'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/E2E-TCN/2026.09.13/061747539845', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/E2E-TCN/2026.09.13/061747558135', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/E2E-TCN/2026.09.13/061747892610', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/E2E-TCN/2026.09.13/061747892761', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2']}]}
+  - 'E2E-TCN-F10': {'ttrpm_dir': 'TTRPM_End-to-End-TCN_one-shot_MS-MS_forecast_baseline_PR_rolloutFalse', 'experiments': [{'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/E2E-TCN/2026.09.13/061747539845', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/E2E-TCN/2026.09.13/061747558135', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/E2E-TCN/2026.09.13/061747892610', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/E2E-TCN/2026.09.13/061747892761', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2']}]}
+  - 'E2E-TCN-bf16-F1000': {'ttrpm_dir': 'TTRPM_End-to-End-TCN_one-shot_MS-MS_forecast_baseline_PR_rolloutFalse', 'experiments': [{'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/E2E-TCN-F1000/2026.09.18/041610795583', 'multirun_paths': ['A_trj_len={HI:20,HO:1000},trial_nb=1', 'A_trj_len={HI:20,HO:1000},trial_nb=2']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/E2E-TCN-F1000/2026.09.18/042157899139', 'multirun_paths': ['A_trj_len={HI:20,HO:1000},trial_nb=1', 'A_trj_len={HI:20,HO:1000},trial_nb=2']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/E2E-TCN-F1000/2026.09.18/042157900567', 'multirun_paths': ['A_trj_len={HI:20,HO:1000},trial_nb=1', 'A_trj_len={HI:20,HO:1000},trial_nb=2']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/E2E-TCN-F1000/2026.09.18/042157904279', 'multirun_paths': ['A_trj_len={HI:20,HO:1000},trial_nb=1', 'A_trj_len={HI:20,HO:1000},trial_nb=2']}]}
+  - 'M3': {'ttrpm_dir': 'TTRPM_M3_multi-step_model_horizon-indexed_MS-MS_forecast_baseline_PR_rolloutFalse', 'experiments': [{'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/M3/2026.09.12/194604638407', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2', 'A_trj_len={HI:20,HO:10},trial_nb=3', 'A_trj_len={HI:20,HO:10},trial_nb=4', 'A_trj_len={HI:20,HO:10},trial_nb=5', 'A_trj_len={HI:20,HO:10},trial_nb=6', 'A_trj_len={HI:20,HO:10},trial_nb=7', 'A_trj_len={HI:20,HO:10},trial_nb=8']}]}
+  - 'M3-F10': {'ttrpm_dir': 'TTRPM_M3_multi-step_model_horizon-indexed_MS-MS_forecast_baseline_PR_rolloutFalse', 'experiments': [{'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/M3/2026.09.12/194604638407', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2', 'A_trj_len={HI:20,HO:10},trial_nb=3', 'A_trj_len={HI:20,HO:10},trial_nb=4', 'A_trj_len={HI:20,HO:10},trial_nb=5', 'A_trj_len={HI:20,HO:10},trial_nb=6', 'A_trj_len={HI:20,HO:10},trial_nb=7', 'A_trj_len={HI:20,HO:10},trial_nb=8']}]}
+  - 'M3-bf16-F1000': {'ttrpm_dir': 'TTRPM_M3_multi-step_model_horizon-indexed_MS-MS_forecast_baseline_PR_rolloutFalse', 'experiments': [{'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/M3-F1000/2026.09.18/042756848427', 'multirun_paths': ['A_trj_len={HI:1,HO:1000},trial_nb=1', 'A_trj_len={HI:1,HO:1000},trial_nb=2']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/M3-F1000/2026.09.18/042756850569', 'multirun_paths': ['A_trj_len={HI:1,HO:1000},trial_nb=1', 'A_trj_len={HI:1,HO:1000},trial_nb=2']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/M3-F1000/2026.09.18/043353404787', 'multirun_paths': ['A_trj_len={HI:1,HO:1000},trial_nb=1', 'A_trj_len={HI:1,HO:1000},trial_nb=2']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-Lorenz-E4B-low-global-noise/M3-F1000/2026.09.18/044600500644', 'multirun_paths': ['A_trj_len={HI:1,HO:1000},trial_nb=1', 'A_trj_len={HI:1,HO:1000},trial_nb=2']}]}
+
+csv_files:
+  - AR-GRU/1000_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-GRU/100_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-GRU/200_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-GRU/300_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-GRU/400_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-GRU/500_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-GRU/600_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-GRU/700_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-GRU/800_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-GRU/900_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-GRU/test_time_models_comparaison_drift_rate.csv
+  - AR-LSTM/1000_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-LSTM/100_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-LSTM/200_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-LSTM/300_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-LSTM/400_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-LSTM/500_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-LSTM/600_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-LSTM/700_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-LSTM/800_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-LSTM/900_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-LSTM/test_time_models_comparaison_drift_rate.csv
+  - AR-MLP-Det/1000_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-MLP-Det/100_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-MLP-Det/200_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-MLP-Det/300_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-MLP-Det/400_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-MLP-Det/500_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-MLP-Det/600_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-MLP-Det/700_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-MLP-Det/800_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-MLP-Det/900_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-MLP-Det/test_time_models_comparaison_drift_rate.csv
+  - AR-MLP-Prob/1000_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-MLP-Prob/100_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-MLP-Prob/200_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-MLP-Prob/300_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-MLP-Prob/400_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-MLP-Prob/500_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-MLP-Prob/600_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-MLP-Prob/700_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-MLP-Prob/800_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-MLP-Prob/900_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-MLP-Prob/test_time_models_comparaison_drift_rate.csv
+  - AR-TCN-bf16-CudaG/1000_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-TCN-bf16-CudaG/100_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-TCN-bf16-CudaG/200_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-TCN-bf16-CudaG/300_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-TCN-bf16-CudaG/400_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-TCN-bf16-CudaG/500_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-TCN-bf16-CudaG/600_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-TCN-bf16-CudaG/700_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-TCN-bf16-CudaG/800_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-TCN-bf16-CudaG/900_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-TCN-bf16-CudaG/test_time_models_comparaison_drift_rate.csv
+  - AR-TCN/1000_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-TCN/100_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-TCN/200_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-TCN/300_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-TCN/400_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-TCN/500_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-TCN/600_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-TCN/700_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-TCN/800_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-TCN/900_epoch_test_time_models_comparaison_drift_rate.csv
+  - AR-TCN/test_time_models_comparaison_drift_rate.csv
+  - E2E-TCN-F10/1000_epoch_test_time_models_comparaison_drift_rate.csv
+  - E2E-TCN-F10/100_epoch_test_time_models_comparaison_drift_rate.csv
+  - E2E-TCN-F10/200_epoch_test_time_models_comparaison_drift_rate.csv
+  - E2E-TCN-F10/300_epoch_test_time_models_comparaison_drift_rate.csv
+  - E2E-TCN-F10/400_epoch_test_time_models_comparaison_drift_rate.csv
+  - E2E-TCN-F10/500_epoch_test_time_models_comparaison_drift_rate.csv
+  - E2E-TCN-F10/600_epoch_test_time_models_comparaison_drift_rate.csv
+  - E2E-TCN-F10/700_epoch_test_time_models_comparaison_drift_rate.csv
+  - E2E-TCN-F10/800_epoch_test_time_models_comparaison_drift_rate.csv
+  - E2E-TCN-F10/900_epoch_test_time_models_comparaison_drift_rate.csv
+  - E2E-TCN-F10/test_time_models_comparaison_drift_rate.csv
+  - E2E-TCN-bf16-F1000/1000_epoch_test_time_models_comparaison_drift_rate.csv
+  - E2E-TCN-bf16-F1000/100_epoch_test_time_models_comparaison_drift_rate.csv
+  - E2E-TCN-bf16-F1000/200_epoch_test_time_models_comparaison_drift_rate.csv
+  - E2E-TCN-bf16-F1000/300_epoch_test_time_models_comparaison_drift_rate.csv
+  - E2E-TCN-bf16-F1000/400_epoch_test_time_models_comparaison_drift_rate.csv
+  - E2E-TCN-bf16-F1000/500_epoch_test_time_models_comparaison_drift_rate.csv
+  - E2E-TCN-bf16-F1000/600_epoch_test_time_models_comparaison_drift_rate.csv
+  - E2E-TCN-bf16-F1000/700_epoch_test_time_models_comparaison_drift_rate.csv
+  - E2E-TCN-bf16-F1000/800_epoch_test_time_models_comparaison_drift_rate.csv
+  - E2E-TCN-bf16-F1000/900_epoch_test_time_models_comparaison_drift_rate.csv
+  - E2E-TCN-bf16-F1000/test_time_models_comparaison_drift_rate.csv
+  - E2E-TCN/1000_epoch_test_time_models_comparaison_drift_rate.csv
+  - E2E-TCN/100_epoch_test_time_models_comparaison_drift_rate.csv
+  - E2E-TCN/200_epoch_test_time_models_comparaison_drift_rate.csv
+  - E2E-TCN/300_epoch_test_time_models_comparaison_drift_rate.csv
+  - E2E-TCN/400_epoch_test_time_models_comparaison_drift_rate.csv
+  - E2E-TCN/500_epoch_test_time_models_comparaison_drift_rate.csv
+  - E2E-TCN/600_epoch_test_time_models_comparaison_drift_rate.csv
+  - E2E-TCN/700_epoch_test_time_models_comparaison_drift_rate.csv
+  - E2E-TCN/800_epoch_test_time_models_comparaison_drift_rate.csv
+  - E2E-TCN/900_epoch_test_time_models_comparaison_drift_rate.csv
+  - E2E-TCN/test_time_models_comparaison_drift_rate.csv
+  - M3-F10/1000_epoch_test_time_models_comparaison_drift_rate.csv
+  - M3-F10/100_epoch_test_time_models_comparaison_drift_rate.csv
+  - M3-F10/200_epoch_test_time_models_comparaison_drift_rate.csv
+  - M3-F10/300_epoch_test_time_models_comparaison_drift_rate.csv
+  - M3-F10/400_epoch_test_time_models_comparaison_drift_rate.csv
+  - M3-F10/500_epoch_test_time_models_comparaison_drift_rate.csv
+  - M3-F10/600_epoch_test_time_models_comparaison_drift_rate.csv
+  - M3-F10/700_epoch_test_time_models_comparaison_drift_rate.csv
+  - M3-F10/800_epoch_test_time_models_comparaison_drift_rate.csv
+  - M3-F10/900_epoch_test_time_models_comparaison_drift_rate.csv
+  - M3-F10/test_time_models_comparaison_drift_rate.csv
+  - M3-bf16-F1000/1000_epoch_test_time_models_comparaison_drift_rate.csv
+  - M3-bf16-F1000/100_epoch_test_time_models_comparaison_drift_rate.csv
+  - M3-bf16-F1000/200_epoch_test_time_models_comparaison_drift_rate.csv
+  - M3-bf16-F1000/300_epoch_test_time_models_comparaison_drift_rate.csv
+  - M3-bf16-F1000/400_epoch_test_time_models_comparaison_drift_rate.csv
+  - M3-bf16-F1000/500_epoch_test_time_models_comparaison_drift_rate.csv
+  - M3-bf16-F1000/600_epoch_test_time_models_comparaison_drift_rate.csv
+  - M3-bf16-F1000/700_epoch_test_time_models_comparaison_drift_rate.csv
+  - M3-bf16-F1000/800_epoch_test_time_models_comparaison_drift_rate.csv
+  - M3-bf16-F1000/900_epoch_test_time_models_comparaison_drift_rate.csv
+  - M3-bf16-F1000/test_time_models_comparaison_drift_rate.csv
+  - M3/1000_epoch_test_time_models_comparaison_drift_rate.csv
+  - M3/100_epoch_test_time_models_comparaison_drift_rate.csv
+  - M3/200_epoch_test_time_models_comparaison_drift_rate.csv
+  - M3/300_epoch_test_time_models_comparaison_drift_rate.csv
+  - M3/400_epoch_test_time_models_comparaison_drift_rate.csv
+  - M3/500_epoch_test_time_models_comparaison_drift_rate.csv
+  - M3/600_epoch_test_time_models_comparaison_drift_rate.csv
+  - M3/700_epoch_test_time_models_comparaison_drift_rate.csv
+  - M3/800_epoch_test_time_models_comparaison_drift_rate.csv
+  - M3/900_epoch_test_time_models_comparaison_drift_rate.csv
+  - M3/test_time_models_comparaison_drift_rate.csv
+  - ours_D-MTM-Pro-MS+CP-fast-CudaG/1000_epoch_test_time_models_comparaison_drift_rate.csv
+  - ours_D-MTM-Pro-MS+CP-fast-CudaG/100_epoch_test_time_models_comparaison_drift_rate.csv
+  - ours_D-MTM-Pro-MS+CP-fast-CudaG/200_epoch_test_time_models_comparaison_drift_rate.csv
+  - ours_D-MTM-Pro-MS+CP-fast-CudaG/300_epoch_test_time_models_comparaison_drift_rate.csv
+  - ours_D-MTM-Pro-MS+CP-fast-CudaG/400_epoch_test_time_models_comparaison_drift_rate.csv
+  - ours_D-MTM-Pro-MS+CP-fast-CudaG/500_epoch_test_time_models_comparaison_drift_rate.csv
+  - ours_D-MTM-Pro-MS+CP-fast-CudaG/600_epoch_test_time_models_comparaison_drift_rate.csv
+  - ours_D-MTM-Pro-MS+CP-fast-CudaG/700_epoch_test_time_models_comparaison_drift_rate.csv
+  - ours_D-MTM-Pro-MS+CP-fast-CudaG/800_epoch_test_time_models_comparaison_drift_rate.csv
+  - ours_D-MTM-Pro-MS+CP-fast-CudaG/900_epoch_test_time_models_comparaison_drift_rate.csv
+  - ours_D-MTM-Pro-MS+CP-fast-CudaG/test_time_models_comparaison_drift_rate.csv
+  - ours_D-MTM-Pro-MS+CP/1000_epoch_test_time_models_comparaison_drift_rate.csv
+  - ours_D-MTM-Pro-MS+CP/100_epoch_test_time_models_comparaison_drift_rate.csv
+  - ours_D-MTM-Pro-MS+CP/200_epoch_test_time_models_comparaison_drift_rate.csv
+  - ours_D-MTM-Pro-MS+CP/300_epoch_test_time_models_comparaison_drift_rate.csv
+  - ours_D-MTM-Pro-MS+CP/400_epoch_test_time_models_comparaison_drift_rate.csv
+  - ours_D-MTM-Pro-MS+CP/500_epoch_test_time_models_comparaison_drift_rate.csv
+  - ours_D-MTM-Pro-MS+CP/600_epoch_test_time_models_comparaison_drift_rate.csv
+  - ours_D-MTM-Pro-MS+CP/700_epoch_test_time_models_comparaison_drift_rate.csv
+  - ours_D-MTM-Pro-MS+CP/800_epoch_test_time_models_comparaison_drift_rate.csv
+  - ours_D-MTM-Pro-MS+CP/900_epoch_test_time_models_comparaison_drift_rate.csv
+  - ours_D-MTM-Pro-MS+CP/test_time_models_comparaison_drift_rate.csv
+  - ours_D-MTM-Pro-MS-fast-cudaG/1000_epoch_test_time_models_comparaison_drift_rate.csv
+  - ours_D-MTM-Pro-MS-fast-cudaG/100_epoch_test_time_models_comparaison_drift_rate.csv
+  - ours_D-MTM-Pro-MS-fast-cudaG/200_epoch_test_time_models_comparaison_drift_rate.csv
+  - ours_D-MTM-Pro-MS-fast-cudaG/300_epoch_test_time_models_comparaison_drift_rate.csv
+  - ours_D-MTM-Pro-MS-fast-cudaG/400_epoch_test_time_models_comparaison_drift_rate.csv
+  - ours_D-MTM-Pro-MS-fast-cudaG/500_epoch_test_time_models_comparaison_drift_rate.csv
+  - ours_D-MTM-Pro-MS-fast-cudaG/600_epoch_test_time_models_comparaison_drift_rate.csv
+  - ours_D-MTM-Pro-MS-fast-cudaG/700_epoch_test_time_models_comparaison_drift_rate.csv
+  - ours_D-MTM-Pro-MS-fast-cudaG/800_epoch_test_time_models_comparaison_drift_rate.csv
+  - ours_D-MTM-Pro-MS-fast-cudaG/900_epoch_test_time_models_comparaison_drift_rate.csv
+  - ours_D-MTM-Pro-MS-fast-cudaG/test_time_models_comparaison_drift_rate.csv

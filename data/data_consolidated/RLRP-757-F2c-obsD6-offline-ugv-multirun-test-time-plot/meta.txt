@@ -1,0 +1,18 @@
+# RLRP-818 experiment data consolidation -- EXPERIMENT level meta
+
+generated_at: 2026-09-13T12:54:07-04:00
+experiment: RLRP-757-F2c-obsD6-offline-ugv-multirun-test-time-plot
+schema_version: 2.2
+config_name: multirun_testtime_rollout_plot (experiment: icra2026_ugv_RLRP-757-F2c-obsD6-offline)
+git_sha: 071c8085988957192b3ba1232f1568bfe432d27c (dirty)
+render_type: standalone
+show.target_is_ood: False
+show.compounded_predictions_score: True
+
+hydra_overrides:
+  - multirun_testtime_rollout_plot@_global_=icra2026_ugv_RLRP-757-F2c-obsD6-offline
+
+produced_by:
+  - drift_rate
+  - drift_rate_samples
+  - training_wall_clock_time

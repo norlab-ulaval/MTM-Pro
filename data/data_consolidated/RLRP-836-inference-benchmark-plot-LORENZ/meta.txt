@@ -1,0 +1,14 @@
+# RLRP-818 experiment data consolidation -- EXPERIMENT level meta
+
+generated_at: 2026-09-22T13:59:38-04:00
+experiment: RLRP-836-inference-benchmark-plot-LORENZ
+schema_version: 2.2
+config_name: model_inference_benchmark_plot-RLRP-836-LORENZ
+git_sha: 0c5ff2e71c40b3eb6a264cb1a2a68ae0cf234ded (dirty)
+render_type: standalone
+
+hydra_overrides:
+  - <none>
+
+produced_by:
+  - inference_benchmark

@@ -1,0 +1,90 @@
+# RLRP-818 experiment data consolidation -- METRIC level meta (inference_benchmark)
+
+generated_at: 2026-09-22T14:00:09-04:00
+metric: inference_benchmark
+producer: plot_inference_benchmark.plot_inference_benchmark
+hook: src/tools/benchmark_tools/plot_inference_benchmark.py: after the `lookup` / `record_lookup` resolution, before the figure creation
+schema_version: 2.2
+param.level: control_loop_step
+param.timing_pass: deployable_latency
+param.metric: rate
+param.plot_type: boxplot
+param.series_by: device
+param.show_device: both
+param.feedback_regimes: ['autoregressive']
+param.models_ordering: cpu
+
+csv_columns:
+  - model
+  - model_config
+  - device_label
+  - level
+  - regime
+  - timing_pass
+  - metric
+  - value
+  - value_unit
+  - latency_mean_ms
+  - latency_median_ms
+  - latency_std_ms
+  - latency_p95_ms
+  - latency_p99_ms
+  - box_median
+  - box_q1
+  - box_q3
+  - box_whislo
+  - box_whishi
+  - box_mean
+  - box_from_raw_samples
+  - schema_version
+
+grp_name_to_slug:
+  - 'multirun-DMtm-Pro-MS+CP+cudagraph' -> multirun-DMtm-Pro-MS+CP+cudagraph
+  - 'multirun-DMtm-Pro-MS+CP+no-enf-continuity' -> multirun-DMtm-Pro-MS+CP+no-enf-continuity
+  - 'multirun-DMtm-Pro-MS+cudagraph' -> multirun-DMtm-Pro-MS+cudagraph
+  - 'multirun-DMtm-Pro-MS+no-enf-continuity' -> multirun-DMtm-Pro-MS+no-enf-continuity
+  - 'multirun-ar-mlp-det' -> multirun-ar-mlp-det
+  - 'multirun-ar-mlp-prob' -> multirun-ar-mlp-prob
+  - 'multirun-e2e-tcn' -> multirun-e2e-tcn
+  - 'multirun-e2e-tcn-F500' -> multirun-e2e-tcn-F500
+  - 'multirun-gru' -> multirun-gru
+  - 'multirun-lstm' -> multirun-lstm
+  - 'multirun-m3' -> multirun-m3
+  - 'multirun-m3-F500' -> multirun-m3-F500
+  - 'multirun-tcn' -> multirun-tcn
+  - 'multirun-tcn+cudagraph' -> multirun-tcn+cudagraph
+  - 'multirun-tcn-bf16' -> multirun-tcn-bf16
+  - 'multirun-tcn-bf16+cudagraph' -> multirun-tcn-bf16+cudagraph
+
+source_experiments:
+  - '__json_paths__': ['/opt/MTM-Pro/artifact/BENCHMARK/RLRP-836-inference-benchmark-jetson-UAV-CPU/2026.09.22/011323/inference_benchmark.json', '/opt/MTM-Pro/artifact/BENCHMARK/RLRP-836-inference-benchmark-jetson-UAV-GPU/2026.09.22/024847/inference_benchmark.json']
+
+csv_files:
+  - multirun-DMtm-Pro-MS+CP+cudagraph/inference_benchmark_control_loop_step_deployable_latency_rate_bar.csv
+  - multirun-DMtm-Pro-MS+CP+no-enf-continuity/inference_benchmark_control_loop_step_deployable_latency_rate_bar.csv
+  - multirun-DMtm-Pro-MS+CP+no-enf-continuity/inference_benchmark_control_loop_step_deployable_latency_rate_boxplot.csv
+  - multirun-DMtm-Pro-MS+cudagraph/inference_benchmark_control_loop_step_deployable_latency_rate_bar.csv
+  - multirun-DMtm-Pro-MS+no-enf-continuity/inference_benchmark_control_loop_step_deployable_latency_rate_bar.csv
+  - multirun-DMtm-Pro-MS+no-enf-continuity/inference_benchmark_control_loop_step_deployable_latency_rate_boxplot.csv
+  - multirun-ar-mlp-det/inference_benchmark_control_loop_step_deployable_latency_rate_bar.csv
+  - multirun-ar-mlp-det/inference_benchmark_control_loop_step_deployable_latency_rate_boxplot.csv
+  - multirun-ar-mlp-prob/inference_benchmark_control_loop_step_deployable_latency_rate_bar.csv
+  - multirun-ar-mlp-prob/inference_benchmark_control_loop_step_deployable_latency_rate_boxplot.csv
+  - multirun-e2e-tcn-F500/inference_benchmark_control_loop_step_deployable_latency_rate_bar.csv
+  - multirun-e2e-tcn-F500/inference_benchmark_control_loop_step_deployable_latency_rate_boxplot.csv
+  - multirun-e2e-tcn/inference_benchmark_control_loop_step_deployable_latency_rate_bar.csv
+  - multirun-e2e-tcn/inference_benchmark_control_loop_step_deployable_latency_rate_boxplot.csv
+  - multirun-gru/inference_benchmark_control_loop_step_deployable_latency_rate_bar.csv
+  - multirun-gru/inference_benchmark_control_loop_step_deployable_latency_rate_boxplot.csv
+  - multirun-lstm/inference_benchmark_control_loop_step_deployable_latency_rate_bar.csv
+  - multirun-lstm/inference_benchmark_control_loop_step_deployable_latency_rate_boxplot.csv
+  - multirun-m3-F500/inference_benchmark_control_loop_step_deployable_latency_rate_bar.csv
+  - multirun-m3-F500/inference_benchmark_control_loop_step_deployable_latency_rate_boxplot.csv
+  - multirun-m3/inference_benchmark_control_loop_step_deployable_latency_rate_bar.csv
+  - multirun-m3/inference_benchmark_control_loop_step_deployable_latency_rate_boxplot.csv
+  - multirun-tcn+cudagraph/inference_benchmark_control_loop_step_deployable_latency_rate_bar.csv
+  - multirun-tcn-bf16+cudagraph/inference_benchmark_control_loop_step_deployable_latency_rate_bar.csv
+  - multirun-tcn-bf16/inference_benchmark_control_loop_step_deployable_latency_rate_bar.csv
+  - multirun-tcn-bf16/inference_benchmark_control_loop_step_deployable_latency_rate_boxplot.csv
+  - multirun-tcn/inference_benchmark_control_loop_step_deployable_latency_rate_bar.csv
+  - multirun-tcn/inference_benchmark_control_loop_step_deployable_latency_rate_boxplot.csv

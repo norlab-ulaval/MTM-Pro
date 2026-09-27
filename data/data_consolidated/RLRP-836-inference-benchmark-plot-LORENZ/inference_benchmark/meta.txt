@@ -1,0 +1,90 @@
+# RLRP-818 experiment data consolidation -- METRIC level meta (inference_benchmark)
+
+generated_at: 2026-09-22T13:59:38-04:00
+metric: inference_benchmark
+producer: plot_inference_benchmark.plot_inference_benchmark
+hook: src/tools/benchmark_tools/plot_inference_benchmark.py: after the `lookup` / `record_lookup` resolution, before the figure creation
+schema_version: 2.2
+param.level: control_loop_step
+param.timing_pass: deployable_latency
+param.metric: rate
+param.plot_type: boxplot
+param.series_by: device
+param.show_device: both
+param.feedback_regimes: ['autoregressive']
+param.models_ordering: cpu
+
+csv_columns:
+  - model
+  - model_config
+  - device_label
+  - level
+  - regime
+  - timing_pass
+  - metric
+  - value
+  - value_unit
+  - latency_mean_ms
+  - latency_median_ms
+  - latency_std_ms
+  - latency_p95_ms
+  - latency_p99_ms
+  - box_median
+  - box_q1
+  - box_q3
+  - box_whislo
+  - box_whishi
+  - box_mean
+  - box_from_raw_samples
+  - schema_version
+
+grp_name_to_slug:
+  - 'math_env_main_multirun_RLRP-757-DMtmPro-MS' -> math_env_main_multirun_RLRP-757-DMtmPro-MS
+  - 'math_env_main_multirun_RLRP-757-DMtmPro-MS+CP' -> math_env_main_multirun_RLRP-757-DMtmPro-MS+CP
+  - 'math_env_main_multirun_RLRP-757-DMtmPro-MS+CP+cudagraph' -> math_env_main_multirun_RLRP-757-DMtmPro-MS+CP+cudagraph
+  - 'math_env_main_multirun_RLRP-757-DMtmPro-MS+cudagraph' -> math_env_main_multirun_RLRP-757-DMtmPro-MS+cudagraph
+  - 'math_env_main_multirun_RLRP-757-ar-mlp-det' -> math_env_main_multirun_RLRP-757-ar-mlp-det
+  - 'math_env_main_multirun_RLRP-757-ar-mlp-prob' -> math_env_main_multirun_RLRP-757-ar-mlp-prob
+  - 'math_env_main_multirun_RLRP-757-e2e-tcn' -> math_env_main_multirun_RLRP-757-e2e-tcn
+  - 'math_env_main_multirun_RLRP-757-e2e-tcn-F1000' -> math_env_main_multirun_RLRP-757-e2e-tcn-F1000
+  - 'math_env_main_multirun_RLRP-757-gru' -> math_env_main_multirun_RLRP-757-gru
+  - 'math_env_main_multirun_RLRP-757-lstm' -> math_env_main_multirun_RLRP-757-lstm
+  - 'math_env_main_multirun_RLRP-757-m3' -> math_env_main_multirun_RLRP-757-m3
+  - 'math_env_main_multirun_RLRP-757-m3-F1000' -> math_env_main_multirun_RLRP-757-m3-F1000
+  - 'math_env_main_multirun_RLRP-757-tcn' -> math_env_main_multirun_RLRP-757-tcn
+  - 'math_env_main_multirun_RLRP-757-tcn+cudagraph' -> math_env_main_multirun_RLRP-757-tcn+cudagraph
+  - 'math_env_main_multirun_RLRP-757-tcn-bf16' -> math_env_main_multirun_RLRP-757-tcn-bf16
+  - 'math_env_main_multirun_RLRP-757-tcn-bf16+cudagraph' -> math_env_main_multirun_RLRP-757-tcn-bf16+cudagraph
+
+source_experiments:
+  - '__json_paths__': ['/opt/MTM-Pro/artifact/BENCHMARK/RLRP-836-inference-benchmark-jetson-LORENZ-CPU/2026.09.21/230939/inference_benchmark.json', '/opt/MTM-Pro/artifact/BENCHMARK/RLRP-836-inference-benchmark-jetson-LORENZ-GPU/2026.09.22/003602/inference_benchmark.json']
+
+csv_files:
+  - math_env_main_multirun_RLRP-757-DMtmPro-MS+CP+cudagraph/inference_benchmark_control_loop_step_deployable_latency_rate_bar.csv
+  - math_env_main_multirun_RLRP-757-DMtmPro-MS+CP/inference_benchmark_control_loop_step_deployable_latency_rate_bar.csv
+  - math_env_main_multirun_RLRP-757-DMtmPro-MS+CP/inference_benchmark_control_loop_step_deployable_latency_rate_boxplot.csv
+  - math_env_main_multirun_RLRP-757-DMtmPro-MS+cudagraph/inference_benchmark_control_loop_step_deployable_latency_rate_bar.csv
+  - math_env_main_multirun_RLRP-757-DMtmPro-MS/inference_benchmark_control_loop_step_deployable_latency_rate_bar.csv
+  - math_env_main_multirun_RLRP-757-DMtmPro-MS/inference_benchmark_control_loop_step_deployable_latency_rate_boxplot.csv
+  - math_env_main_multirun_RLRP-757-ar-mlp-det/inference_benchmark_control_loop_step_deployable_latency_rate_bar.csv
+  - math_env_main_multirun_RLRP-757-ar-mlp-det/inference_benchmark_control_loop_step_deployable_latency_rate_boxplot.csv
+  - math_env_main_multirun_RLRP-757-ar-mlp-prob/inference_benchmark_control_loop_step_deployable_latency_rate_bar.csv
+  - math_env_main_multirun_RLRP-757-ar-mlp-prob/inference_benchmark_control_loop_step_deployable_latency_rate_boxplot.csv
+  - math_env_main_multirun_RLRP-757-e2e-tcn-F1000/inference_benchmark_control_loop_step_deployable_latency_rate_bar.csv
+  - math_env_main_multirun_RLRP-757-e2e-tcn-F1000/inference_benchmark_control_loop_step_deployable_latency_rate_boxplot.csv
+  - math_env_main_multirun_RLRP-757-e2e-tcn/inference_benchmark_control_loop_step_deployable_latency_rate_bar.csv
+  - math_env_main_multirun_RLRP-757-e2e-tcn/inference_benchmark_control_loop_step_deployable_latency_rate_boxplot.csv
+  - math_env_main_multirun_RLRP-757-gru/inference_benchmark_control_loop_step_deployable_latency_rate_bar.csv
+  - math_env_main_multirun_RLRP-757-gru/inference_benchmark_control_loop_step_deployable_latency_rate_boxplot.csv
+  - math_env_main_multirun_RLRP-757-lstm/inference_benchmark_control_loop_step_deployable_latency_rate_bar.csv
+  - math_env_main_multirun_RLRP-757-lstm/inference_benchmark_control_loop_step_deployable_latency_rate_boxplot.csv
+  - math_env_main_multirun_RLRP-757-m3-F1000/inference_benchmark_control_loop_step_deployable_latency_rate_bar.csv
+  - math_env_main_multirun_RLRP-757-m3-F1000/inference_benchmark_control_loop_step_deployable_latency_rate_boxplot.csv
+  - math_env_main_multirun_RLRP-757-m3/inference_benchmark_control_loop_step_deployable_latency_rate_bar.csv
+  - math_env_main_multirun_RLRP-757-m3/inference_benchmark_control_loop_step_deployable_latency_rate_boxplot.csv
+  - math_env_main_multirun_RLRP-757-tcn+cudagraph/inference_benchmark_control_loop_step_deployable_latency_rate_bar.csv
+  - math_env_main_multirun_RLRP-757-tcn-bf16+cudagraph/inference_benchmark_control_loop_step_deployable_latency_rate_bar.csv
+  - math_env_main_multirun_RLRP-757-tcn-bf16/inference_benchmark_control_loop_step_deployable_latency_rate_bar.csv
+  - math_env_main_multirun_RLRP-757-tcn-bf16/inference_benchmark_control_loop_step_deployable_latency_rate_boxplot.csv
+  - math_env_main_multirun_RLRP-757-tcn/inference_benchmark_control_loop_step_deployable_latency_rate_bar.csv
+  - math_env_main_multirun_RLRP-757-tcn/inference_benchmark_control_loop_step_deployable_latency_rate_boxplot.csv

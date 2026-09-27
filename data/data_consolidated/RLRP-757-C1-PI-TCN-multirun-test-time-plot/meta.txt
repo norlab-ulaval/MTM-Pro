@@ -1,0 +1,17 @@
+# RLRP-818 experiment data consolidation -- EXPERIMENT level meta
+
+generated_at: 2026-09-25T11:25:07-04:00
+experiment: RLRP-757-C1-PI-TCN-multirun-test-time-plot
+schema_version: 2.2
+config_name: multirun_testtime_rollout_plot (experiment: icra2026_pi_tcn_RLRP-757-C1)
+git_sha: 5b78bf12258ffb42c382e4eaeb2813835a1075f2 (dirty)
+render_type: standalone
+show.target_is_ood: False
+show.compounded_predictions_score: True
+
+hydra_overrides:
+  - multirun_testtime_rollout_plot@_global_=icra2026_pi_tcn_RLRP-757-C1
+
+produced_by:
+  - drift_rate
+  - drift_rate_samples

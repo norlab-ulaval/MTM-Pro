@@ -1,0 +1,18 @@
+# RLRP-818 experiment data consolidation -- EXPERIMENT level meta
+
+generated_at: 2026-09-22T09:49:38-04:00
+experiment: RLRP-757-Lorenz-E4B-multirun-test-time-plot
+schema_version: 2.2
+config_name: multirun_testtime_rollout_plot (experiment: icra2026_Lorenz_RLRP-757-E4B-low-global-noise)
+git_sha: cd80c92ac7114f394479aa581b5b028b671101ec (dirty)
+render_type: standalone
+show.target_is_ood: False
+show.compounded_predictions_score: True
+
+hydra_overrides:
+  - multirun_testtime_rollout_plot@_global_=icra2026_Lorenz_RLRP-757-E4B-low-global-noise
+
+produced_by:
+  - drift_rate
+  - drift_rate_samples
+  - training_wall_clock_time

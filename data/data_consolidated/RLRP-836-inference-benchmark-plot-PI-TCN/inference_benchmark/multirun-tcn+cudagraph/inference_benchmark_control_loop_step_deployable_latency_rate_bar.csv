@@ -1,0 +1,2 @@
+model,model_config,device_label,level,regime,timing_pass,metric,value,value_unit,latency_mean_ms,latency_median_ms,latency_std_ms,latency_p95_ms,latency_p99_ms,box_median,box_q1,box_q3,box_whislo,box_whishi,box_mean,box_from_raw_samples,schema_version
+AR-TCN-cg,multirun-tcn+cudagraph,GPU,control_loop_step,autoregressive,deployable_latency,rate,159.71094352552004,Hz,6.259231674484909,6.261311704292893,0.03997652720800712,6.317238346673548,6.336250826716423,159.71094352552004,159.1486942204128,160.2663126228127,158.29701922305455,161.51525826520296,159.76401769507805,True,2.2

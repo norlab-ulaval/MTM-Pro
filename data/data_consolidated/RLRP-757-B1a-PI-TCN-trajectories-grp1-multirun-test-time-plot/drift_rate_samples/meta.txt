@@ -1,0 +1,178 @@
+# RLRP-818 experiment data consolidation -- METRIC level meta (drift_rate_samples)
+
+generated_at: 2026-09-22T09:12:37-04:00
+metric: drift_rate_samples
+producer: generate_fct._generate_drift_rate_plot_single
+hook: src/pipeline/pipeline_utils/multirun_testtime_rollout_plot_pipeline_utils/generate_fct.py: after the warm-up trimming, before `ax.plot`
+schema_version: 2.2
+param.drift_type: timesteps
+param.unit: m
+param.mae_feature_reduction: mean
+param.mae_grp_reduction: median
+param.sample_reduction: none
+param.sample_identity: rollout
+param.float_format: repr
+param.timestep_stride: None
+param.horizon_ratio_map: {0.25: 716, 0.5: 1231, 0.75: 1747, 1.0: 2262}
+param.warmup_end: 200
+param.horizon_length: 2062
+param.length_cutoff: 2262
+param.selected_trajectories: ['test_trajectories/ellipse_1', 'test_trajectories/warped_ellipse_1', 'test_trajectories/extended_lemniscate']
+param.max_len: 2262
+param.warmup_mode: discard
+param.warmup_steps: 200
+param.timestamp_scale: 0.01
+param.timestamp_unit: s
+param.trials_label: models
+param.trajectory_name_mapping: {1: 'ellipse_1', 2: 'extended_lemniscate', 3: 'warped_ellipse_1'}
+param.trajectory_ids_per_group: {'AR-Det-MLP': [1, 2, 3], 'AR-Pro-MLP': [1, 2, 3], 'AR-GRU': [1, 2, 3], 'AR-LSTM': [1, 2, 3], 'AR-TCN': [1, 2, 3], 'AR-TCN-bf16-CudaG': [1, 2, 3], 'E2E-TCN-bf16-F500': [1, 2, 3], 'M3-bf16-F500': [1, 2, 3], '(ours) Dist-MTM-Pro-MS+CP': [1, 2, 3], '(ours) Dist-MTM-Pro-MS+CP-fast-CudaG': [1, 2, 3], '(ours) Dist-MTM-Pro-MS': [1, 2, 3], '(ours) Dist-MTM-Pro-MS-cudaG': [1, 2, 3]}
+param.seed_key_mapping: {'AR-Det-MLP': {1: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/AR-MLP-DET/2026.08.31/065359702332', 'A_trj_len={HI:20,HO:10},trial_nb=1'], 2: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/AR-MLP-DET/2026.08.31/065359702332', 'A_trj_len={HI:20,HO:10},trial_nb=2'], 3: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/AR-MLP-DET/2026.08.31/065359702332', 'A_trj_len={HI:20,HO:10},trial_nb=3'], 4: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/AR-MLP-DET/2026.08.31/065359702332', 'A_trj_len={HI:20,HO:10},trial_nb=4'], 5: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/AR-MLP-DET/2026.08.31/065401348733', 'A_trj_len={HI:20,HO:10},trial_nb=1'], 6: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/AR-MLP-DET/2026.08.31/065401348733', 'A_trj_len={HI:20,HO:10},trial_nb=2'], 7: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/AR-MLP-DET/2026.08.31/065401348733', 'A_trj_len={HI:20,HO:10},trial_nb=3'], 8: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/AR-MLP-DET/2026.08.31/065401348733', 'A_trj_len={HI:20,HO:10},trial_nb=4']}, 'AR-Pro-MLP': {1: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/AR-MLP-PROB/2026.08.31/055649677891', 'A_trj_len={HI:20,HO:10},trial_nb=1'], 2: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/AR-MLP-PROB/2026.08.31/055649677891', 'A_trj_len={HI:20,HO:10},trial_nb=2'], 3: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/AR-MLP-PROB/2026.08.31/055649677891', 'A_trj_len={HI:20,HO:10},trial_nb=3'], 4: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/AR-MLP-PROB/2026.08.31/055649677891', 'A_trj_len={HI:20,HO:10},trial_nb=4'], 5: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/AR-MLP-PROB/2026.08.31/055649876416', 'A_trj_len={HI:20,HO:10},trial_nb=1'], 6: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/AR-MLP-PROB/2026.08.31/055649876416', 'A_trj_len={HI:20,HO:10},trial_nb=2'], 7: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/AR-MLP-PROB/2026.08.31/055649876416', 'A_trj_len={HI:20,HO:10},trial_nb=3'], 8: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/AR-MLP-PROB/2026.08.31/055649876416', 'A_trj_len={HI:20,HO:10},trial_nb=4']}, 'AR-GRU': {1: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/GRU/2026.08.31/055240636065', 'A_trj_len={HI:20,HO:10},trial_nb=1'], 2: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/GRU/2026.08.31/055240636065', 'A_trj_len={HI:20,HO:10},trial_nb=2'], 3: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/GRU/2026.08.31/055240636065', 'A_trj_len={HI:20,HO:10},trial_nb=3'], 4: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/GRU/2026.08.31/055240636065', 'A_trj_len={HI:20,HO:10},trial_nb=4'], 5: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/GRU/2026.08.31/065056583108', 'A_trj_len={HI:20,HO:10},trial_nb=1'], 6: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/GRU/2026.08.31/065056583108', 'A_trj_len={HI:20,HO:10},trial_nb=2'], 7: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/GRU/2026.08.31/065056583108', 'A_trj_len={HI:20,HO:10},trial_nb=3'], 8: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/GRU/2026.08.31/065056583108', 'A_trj_len={HI:20,HO:10},trial_nb=4']}, 'AR-LSTM': {1: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/LSTM/2026.08.31/055649677350', 'A_trj_len={HI:20,HO:10},trial_nb=1'], 2: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/LSTM/2026.08.31/055649677350', 'A_trj_len={HI:20,HO:10},trial_nb=2'], 3: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/LSTM/2026.08.31/055649677350', 'A_trj_len={HI:20,HO:10},trial_nb=3'], 4: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/LSTM/2026.08.31/055649677350', 'A_trj_len={HI:20,HO:10},trial_nb=4'], 5: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/LSTM/2026.08.31/065359403311', 'A_trj_len={HI:20,HO:10},trial_nb=1'], 6: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/LSTM/2026.08.31/065359403311', 'A_trj_len={HI:20,HO:10},trial_nb=2'], 7: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/LSTM/2026.08.31/065359403311', 'A_trj_len={HI:20,HO:10},trial_nb=3'], 8: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/LSTM/2026.08.31/065359403311', 'A_trj_len={HI:20,HO:10},trial_nb=4']}, 'AR-TCN': {1: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/TCN/2026.08.30/225215311000', 'A_trj_len={HI:20,HO:10},trial_nb=1'], 2: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/TCN/2026.08.30/233749525303', 'A_trj_len={HI:20,HO:10},trial_nb=1'], 3: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/TCN/2026.08.30/233751341365', 'A_trj_len={HI:20,HO:10},trial_nb=1'], 4: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/TCN/2026.08.30/233754263816', 'A_trj_len={HI:20,HO:10},trial_nb=1'], 5: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/TCN/2026.09.02/053228416423', 'A_trj_len={HI:20,HO:10},trial_nb=1'], 6: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/TCN/2026.09.02/060959730673', 'A_trj_len={HI:20,HO:10},trial_nb=1'], 7: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/TCN/2026.09.02/063021148319', 'A_trj_len={HI:20,HO:10},trial_nb=1'], 8: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/TCN/2026.09.02/075020469826', 'A_trj_len={HI:20,HO:10},trial_nb=1']}, 'AR-TCN-bf16-CudaG': {1: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/TCN-bf16+cudagraph/2026.09.20/221031705420', 'A_trj_len={HI:20,HO:10},trial_nb=1'], 2: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/TCN-bf16+cudagraph/2026.09.20/221031705420', 'A_trj_len={HI:20,HO:10},trial_nb=2'], 3: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/TCN-bf16+cudagraph/2026.09.20/221031705420', 'A_trj_len={HI:20,HO:10},trial_nb=3'], 4: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/TCN-bf16+cudagraph/2026.09.20/221031705420', 'A_trj_len={HI:20,HO:10},trial_nb=4'], 5: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/TCN-bf16+cudagraph/2026.09.20/221031714138', 'A_trj_len={HI:20,HO:10},trial_nb=1'], 6: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/TCN-bf16+cudagraph/2026.09.20/221031714138', 'A_trj_len={HI:20,HO:10},trial_nb=2'], 7: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/TCN-bf16+cudagraph/2026.09.20/221031714138', 'A_trj_len={HI:20,HO:10},trial_nb=3'], 8: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/TCN-bf16+cudagraph/2026.09.20/221031714138', 'A_trj_len={HI:20,HO:10},trial_nb=4']}, 'E2E-TCN-bf16-F500': {1: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/E2E-TCN-F500/2026.09.20/182927874348', 'A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=1'], 2: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/E2E-TCN-F500/2026.09.20/182927874348', 'A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=2'], 3: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/E2E-TCN-F500/2026.09.20/200930497622', 'A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=1'], 4: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/E2E-TCN-F500/2026.09.20/200930497622', 'A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=2'], 5: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/E2E-TCN-F500/2026.09.20/201233517740', 'A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=1'], 6: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/E2E-TCN-F500/2026.09.20/201233517740', 'A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=2'], 7: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/E2E-TCN-F500/2026.09.20/204713814367', 'A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=1'], 8: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/E2E-TCN-F500/2026.09.20/204713814367', 'A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=2']}, 'M3-bf16-F500': {1: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/M3-F500/2026.09.20/210502029573', 'A_trj_len={HI:1,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=1'], 2: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/M3-F500/2026.09.20/210502029573', 'A_trj_len={HI:1,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=2'], 3: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/M3-F500/2026.09.20/215241629146', 'A_trj_len={HI:1,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=1'], 4: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/M3-F500/2026.09.20/215241629146', 'A_trj_len={HI:1,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=2'], 5: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/M3-F500/2026.09.20/222450134215', 'A_trj_len={HI:1,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=1'], 6: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/M3-F500/2026.09.20/222450134215', 'A_trj_len={HI:1,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=2'], 7: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/M3-F500/2026.09.20/231430068411', 'A_trj_len={HI:1,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=1'], 8: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/M3-F500/2026.09.20/231430068411', 'A_trj_len={HI:1,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=2']}, '(ours) Dist-MTM-Pro-MS+CP': {1: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS+CP+no-enf-continuity-B1a/2026.09.03/033133372080', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=1'], 2: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS+CP+no-enf-continuity-B1a/2026.09.03/033133372080', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=2'], 3: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS+CP+no-enf-continuity-B1a/2026.09.03/033133372922', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=1'], 4: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS+CP+no-enf-continuity-B1a/2026.09.03/033133372922', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=2'], 5: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS+CP+no-enf-continuity-B1a/2026.09.03/033142834879', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=1'], 6: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS+CP+no-enf-continuity-B1a/2026.09.03/033142834879', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=2'], 7: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS+CP+no-enf-continuity-B1a/2026.09.03/033142838790', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=1'], 8: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS+CP+no-enf-continuity-B1a/2026.09.03/033142838790', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=2']}, '(ours) Dist-MTM-Pro-MS+CP-fast-CudaG': {1: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS+CP+cudagraph-B1a/2026.09.21/184301512984', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=1'], 2: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS+CP+cudagraph-B1a/2026.09.21/184301512984', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=2'], 3: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS+CP+cudagraph-B1a/2026.09.21/184301512984', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=3'], 4: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS+CP+cudagraph-B1a/2026.09.21/184301512984', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=4'], 5: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS+CP+cudagraph-B1a/2026.09.21/184301514201', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=1'], 6: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS+CP+cudagraph-B1a/2026.09.21/184301514201', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=2'], 7: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS+CP+cudagraph-B1a/2026.09.21/184301514201', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=3'], 8: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS+CP+cudagraph-B1a/2026.09.21/184301514201', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=4']}, '(ours) Dist-MTM-Pro-MS': {1: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS-B1a/2026.08.31/064230212430', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=1'], 2: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS-B1a/2026.08.31/064230212430', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=2'], 3: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS-B1a/2026.08.31/064230212430', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=3'], 4: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS-B1a/2026.08.31/064230212430', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=4'], 5: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS-B1a/2026.08.31/064626190029', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=1'], 6: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS-B1a/2026.08.31/064626190029', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=2'], 7: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS-B1a/2026.08.31/064626190029', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=3'], 8: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS-B1a/2026.08.31/064626190029', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=4']}, '(ours) Dist-MTM-Pro-MS-cudaG': {1: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS+cudagraph-B1a/2026.09.21/184301510607', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=1'], 2: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS+cudagraph-B1a/2026.09.21/184301510607', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=2'], 3: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS+cudagraph-B1a/2026.09.21/184301510607', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=3'], 4: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS+cudagraph-B1a/2026.09.21/184301510607', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=4'], 5: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS+cudagraph-B1a/2026.09.21/184301510607', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=6'], 6: ['artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS+cudagraph-B1a/2026.09.21/184301510607', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=7']}}
+param.n_seeds: {'AR-Det-MLP': 8, 'AR-Pro-MLP': 8, 'AR-GRU': 8, 'AR-LSTM': 8, 'AR-TCN': 8, 'AR-TCN-bf16-CudaG': 8, 'E2E-TCN-bf16-F500': 8, 'M3-bf16-F500': 8, '(ours) Dist-MTM-Pro-MS+CP': 8, '(ours) Dist-MTM-Pro-MS+CP-fast-CudaG': 8, '(ours) Dist-MTM-Pro-MS': 8, '(ours) Dist-MTM-Pro-MS-cudaG': 6}
+param.n_rollouts: {'AR-Det-MLP': 24, 'AR-Pro-MLP': 24, 'AR-GRU': 24, 'AR-LSTM': 24, 'AR-TCN': 24, 'AR-TCN-bf16-CudaG': 24, 'E2E-TCN-bf16-F500': 24, 'M3-bf16-F500': 24, '(ours) Dist-MTM-Pro-MS+CP': 24, '(ours) Dist-MTM-Pro-MS+CP-fast-CudaG': 24, '(ours) Dist-MTM-Pro-MS': 24, '(ours) Dist-MTM-Pro-MS-cudaG': 18}
+param.missing_cells: {'AR-Det-MLP': 0, 'AR-Pro-MLP': 0, 'AR-GRU': 0, 'AR-LSTM': 0, 'AR-TCN': 0, 'AR-TCN-bf16-CudaG': 0, 'E2E-TCN-bf16-F500': 0, 'M3-bf16-F500': 0, '(ours) Dist-MTM-Pro-MS+CP': 0, '(ours) Dist-MTM-Pro-MS+CP-fast-CudaG': 0, '(ours) Dist-MTM-Pro-MS': 0, '(ours) Dist-MTM-Pro-MS-cudaG': 0}
+
+csv_columns:
+  - timestep
+  - timestamp
+  - 1
+  - 2
+  - 3
+
+grp_name_to_slug:
+  - '(ours) Dist-MTM-Pro-MS' -> ours_Dist-MTM-Pro-MS
+  - '(ours) Dist-MTM-Pro-MS+CP' -> ours_Dist-MTM-Pro-MS+CP
+  - '(ours) Dist-MTM-Pro-MS+CP-fast-CudaG' -> ours_Dist-MTM-Pro-MS+CP-fast-CudaG
+  - '(ours) Dist-MTM-Pro-MS-cudaG' -> ours_Dist-MTM-Pro-MS-cudaG
+  - 'AR-Det-MLP' -> AR-Det-MLP
+  - 'AR-GRU' -> AR-GRU
+  - 'AR-LSTM' -> AR-LSTM
+  - 'AR-Pro-MLP' -> AR-Pro-MLP
+  - 'AR-TCN' -> AR-TCN
+  - 'AR-TCN-bf16-CudaG' -> AR-TCN-bf16-CudaG
+  - 'E2E-TCN-bf16-F500' -> E2E-TCN-bf16-F500
+  - 'M3-bf16-F500' -> M3-bf16-F500
+
+group_metadata:
+  - '(ours) Dist-MTM-Pro-MS': short_name=DMTM-Pro-MS
+(ours), n_trials=8, n_trajectories=3, n_rollouts=24
+  - '(ours) Dist-MTM-Pro-MS+CP': short_name=(ours) MTM-Pro, n_trials=8, n_trajectories=3, n_rollouts=24
+  - '(ours) Dist-MTM-Pro-MS+CP-fast-CudaG': short_name=(ours) MTM-Pro-cg, n_trials=8, n_trajectories=3, n_rollouts=24
+  - '(ours) Dist-MTM-Pro-MS-cudaG': short_name=(ours) MTM-Pro-MS-cg, n_trials=6, n_trajectories=3, n_rollouts=18
+  - 'AR-Det-MLP': short_name=AR-Det-MLP, n_trials=8, n_trajectories=3, n_rollouts=24
+  - 'AR-GRU': short_name=AR-GRU, n_trials=8, n_trajectories=3, n_rollouts=24
+  - 'AR-LSTM': short_name=AR-LSTM, n_trials=8, n_trajectories=3, n_rollouts=24
+  - 'AR-Pro-MLP': short_name=AR-Prob-MLP, n_trials=8, n_trajectories=3, n_rollouts=24
+  - 'AR-TCN': short_name=AR-TCN, n_trials=8, n_trajectories=3, n_rollouts=24
+  - 'AR-TCN-bf16-CudaG': short_name=AR-TCN-bf16-CudaG, n_trials=8, n_trajectories=3, n_rollouts=24
+  - 'E2E-TCN-bf16-F500': short_name=E2E-TCN-bf16-F500, n_trials=8, n_trajectories=3, n_rollouts=24
+  - 'M3-bf16-F500': short_name=M3-bf16-F500, n_trials=8, n_trajectories=3, n_rollouts=24
+
+source_experiments:
+  - '(ours) Dist-MTM-Pro-MS': {'ttrpm_dir': 'TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Distributional_MTM-Pro_PR_rolloutFalse', 'experiments': [{'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS-B1a/2026.08.31/064230212430', 'multirun_paths': ['A_trj_len={HI:20,HO:10,U:10},trial_nb=1', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=2', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=3', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=4']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS-B1a/2026.08.31/064626190029', 'multirun_paths': ['A_trj_len={HI:20,HO:10,U:10},trial_nb=1', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=2', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=3', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=4']}]}
+  - '(ours) Dist-MTM-Pro-MS+CP': {'ttrpm_dir': 'TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Distributional_MTM-Pro_PR_rolloutFalse', 'experiments': [{'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS+CP+no-enf-continuity-B1a/2026.09.03/033133372080', 'multirun_paths': ['A_trj_len={HI:20,HO:10,U:10},trial_nb=1', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=2']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS+CP+no-enf-continuity-B1a/2026.09.03/033133372922', 'multirun_paths': ['A_trj_len={HI:20,HO:10,U:10},trial_nb=1', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=2']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS+CP+no-enf-continuity-B1a/2026.09.03/033142834879', 'multirun_paths': ['A_trj_len={HI:20,HO:10,U:10},trial_nb=1', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=2']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS+CP+no-enf-continuity-B1a/2026.09.03/033142838790', 'multirun_paths': ['A_trj_len={HI:20,HO:10,U:10},trial_nb=1', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=2']}]}
+  - '(ours) Dist-MTM-Pro-MS+CP-fast-CudaG': {'ttrpm_dir': 'TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Distributional_MTM-Pro_PR_rolloutFalse', 'experiments': [{'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS+CP+cudagraph-B1a/2026.09.21/184301512984', 'multirun_paths': ['A_trj_len={HI:20,HO:10,U:10},trial_nb=1', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=2', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=3', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=4']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS+CP+cudagraph-B1a/2026.09.21/184301514201', 'multirun_paths': ['A_trj_len={HI:20,HO:10,U:10},trial_nb=1', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=2', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=3', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=4']}]}
+  - '(ours) Dist-MTM-Pro-MS-cudaG': {'ttrpm_dir': 'TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Distributional_MTM-Pro_PR_rolloutFalse', 'experiments': [{'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/DMtm-Pro-MS+cudagraph-B1a/2026.09.21/184301510607', 'multirun_paths': ['A_trj_len={HI:20,HO:10,U:10},trial_nb=1', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=2', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=3', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=4', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=6', 'A_trj_len={HI:20,HO:10,U:10},trial_nb=7']}]}
+  - 'AR-Det-MLP': {'ttrpm_dir': 'TTRPM_Deterministic_MLP_Auto-regressive_MS_unroll_model_PR_rolloutFalse', 'experiments': [{'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/AR-MLP-DET/2026.08.31/065359702332', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2', 'A_trj_len={HI:20,HO:10},trial_nb=3', 'A_trj_len={HI:20,HO:10},trial_nb=4']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/AR-MLP-DET/2026.08.31/065401348733', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2', 'A_trj_len={HI:20,HO:10},trial_nb=3', 'A_trj_len={HI:20,HO:10},trial_nb=4']}]}
+  - 'AR-GRU': {'ttrpm_dir': 'TTRPM_GRU_Deterministic_Auto-regressive_MS_unroll_model_PR_rolloutFalse', 'experiments': [{'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/GRU/2026.08.31/055240636065', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2', 'A_trj_len={HI:20,HO:10},trial_nb=3', 'A_trj_len={HI:20,HO:10},trial_nb=4']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/GRU/2026.08.31/065056583108', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2', 'A_trj_len={HI:20,HO:10},trial_nb=3', 'A_trj_len={HI:20,HO:10},trial_nb=4']}]}
+  - 'AR-LSTM': {'ttrpm_dir': 'TTRPM_LSTM_Deterministic_Auto-regressive_MS_unroll_model_PR_rolloutFalse', 'experiments': [{'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/LSTM/2026.08.31/055649677350', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2', 'A_trj_len={HI:20,HO:10},trial_nb=3', 'A_trj_len={HI:20,HO:10},trial_nb=4']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/LSTM/2026.08.31/065359403311', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2', 'A_trj_len={HI:20,HO:10},trial_nb=3', 'A_trj_len={HI:20,HO:10},trial_nb=4']}]}
+  - 'AR-Pro-MLP': {'ttrpm_dir': 'TTRPM_Probabilisitic_MLP_Auto-regressive_MS_unroll_model_PR_rolloutFalse', 'experiments': [{'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/AR-MLP-PROB/2026.08.31/055649677891', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2', 'A_trj_len={HI:20,HO:10},trial_nb=3', 'A_trj_len={HI:20,HO:10},trial_nb=4']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/AR-MLP-PROB/2026.08.31/055649876416', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2', 'A_trj_len={HI:20,HO:10},trial_nb=3', 'A_trj_len={HI:20,HO:10},trial_nb=4']}]}
+  - 'AR-TCN': {'ttrpm_dir': 'TTRPM_TCN_Deterministic_Auto-regressive_MS_unroll_model_PR_rolloutFalse', 'experiments': [{'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/TCN/2026.08.30/225215311000', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/TCN/2026.08.30/233749525303', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/TCN/2026.08.30/233751341365', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/TCN/2026.08.30/233754263816', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/TCN/2026.09.02/053228416423', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/TCN/2026.09.02/060959730673', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/TCN/2026.09.02/063021148319', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/TCN/2026.09.02/075020469826', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1']}]}
+  - 'AR-TCN-bf16-CudaG': {'ttrpm_dir': 'TTRPM_TCN_Deterministic_Auto-regressive_MS_unroll_model_PR_rolloutFalse', 'experiments': [{'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/TCN-bf16+cudagraph/2026.09.20/221031705420', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2', 'A_trj_len={HI:20,HO:10},trial_nb=3', 'A_trj_len={HI:20,HO:10},trial_nb=4']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/TCN-bf16+cudagraph/2026.09.20/221031714138', 'multirun_paths': ['A_trj_len={HI:20,HO:10},trial_nb=1', 'A_trj_len={HI:20,HO:10},trial_nb=2', 'A_trj_len={HI:20,HO:10},trial_nb=3', 'A_trj_len={HI:20,HO:10},trial_nb=4']}]}
+  - 'E2E-TCN-bf16-F500': {'ttrpm_dir': 'TTRPM_End-to-End-TCN_one-shot_MS-MS_forecast_baseline_PR_rolloutFalse', 'experiments': [{'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/E2E-TCN-F500/2026.09.20/182927874348', 'multirun_paths': ['A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=1', 'A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=2']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/E2E-TCN-F500/2026.09.20/200930497622', 'multirun_paths': ['A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=1', 'A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=2']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/E2E-TCN-F500/2026.09.20/201233517740', 'multirun_paths': ['A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=1', 'A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=2']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/E2E-TCN-F500/2026.09.20/204713814367', 'multirun_paths': ['A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=1', 'A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=2']}]}
+  - 'M3-bf16-F500': {'ttrpm_dir': 'TTRPM_M3_multi-step_model_horizon-indexed_MS-MS_forecast_baseline_PR_rolloutFalse', 'experiments': [{'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/M3-F500/2026.09.20/210502029573', 'multirun_paths': ['A_trj_len={HI:1,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=1', 'A_trj_len={HI:1,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=2']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/M3-F500/2026.09.20/215241629146', 'multirun_paths': ['A_trj_len={HI:1,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=1', 'A_trj_len={HI:1,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=2']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/M3-F500/2026.09.20/222450134215', 'multirun_paths': ['A_trj_len={HI:1,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=1', 'A_trj_len={HI:1,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=2']}, {'experiment_path': 'artifact/ICRA2026/RLRP-757-PI-TCN-B1a/M3-F500/2026.09.20/231430068411', 'multirun_paths': ['A_trj_len={HI:1,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=1', 'A_trj_len={HI:1,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=2']}]}
+
+csv_files:
+  - AR-Det-MLP/seed_1_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-Det-MLP/seed_2_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-Det-MLP/seed_3_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-Det-MLP/seed_4_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-Det-MLP/seed_5_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-Det-MLP/seed_6_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-Det-MLP/seed_7_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-Det-MLP/seed_8_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-GRU/seed_1_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-GRU/seed_2_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-GRU/seed_3_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-GRU/seed_4_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-GRU/seed_5_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-GRU/seed_6_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-GRU/seed_7_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-GRU/seed_8_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-LSTM/seed_1_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-LSTM/seed_2_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-LSTM/seed_3_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-LSTM/seed_4_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-LSTM/seed_5_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-LSTM/seed_6_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-LSTM/seed_7_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-LSTM/seed_8_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-Pro-MLP/seed_1_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-Pro-MLP/seed_2_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-Pro-MLP/seed_3_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-Pro-MLP/seed_4_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-Pro-MLP/seed_5_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-Pro-MLP/seed_6_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-Pro-MLP/seed_7_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-Pro-MLP/seed_8_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-TCN-bf16-CudaG/seed_1_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-TCN-bf16-CudaG/seed_2_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-TCN-bf16-CudaG/seed_3_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-TCN-bf16-CudaG/seed_4_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-TCN-bf16-CudaG/seed_5_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-TCN-bf16-CudaG/seed_6_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-TCN-bf16-CudaG/seed_7_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-TCN-bf16-CudaG/seed_8_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-TCN/seed_1_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-TCN/seed_2_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-TCN/seed_3_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-TCN/seed_4_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-TCN/seed_5_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-TCN/seed_6_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-TCN/seed_7_test_time_models_comparaison_drift_rate_samples.csv
+  - AR-TCN/seed_8_test_time_models_comparaison_drift_rate_samples.csv
+  - E2E-TCN-bf16-F500/seed_1_test_time_models_comparaison_drift_rate_samples.csv
+  - E2E-TCN-bf16-F500/seed_2_test_time_models_comparaison_drift_rate_samples.csv
+  - E2E-TCN-bf16-F500/seed_3_test_time_models_comparaison_drift_rate_samples.csv
+  - E2E-TCN-bf16-F500/seed_4_test_time_models_comparaison_drift_rate_samples.csv
+  - E2E-TCN-bf16-F500/seed_5_test_time_models_comparaison_drift_rate_samples.csv
+  - E2E-TCN-bf16-F500/seed_6_test_time_models_comparaison_drift_rate_samples.csv
+  - E2E-TCN-bf16-F500/seed_7_test_time_models_comparaison_drift_rate_samples.csv
+  - E2E-TCN-bf16-F500/seed_8_test_time_models_comparaison_drift_rate_samples.csv
+  - M3-bf16-F500/seed_1_test_time_models_comparaison_drift_rate_samples.csv
+  - M3-bf16-F500/seed_2_test_time_models_comparaison_drift_rate_samples.csv
+  - M3-bf16-F500/seed_3_test_time_models_comparaison_drift_rate_samples.csv
+  - M3-bf16-F500/seed_4_test_time_models_comparaison_drift_rate_samples.csv
+  - M3-bf16-F500/seed_5_test_time_models_comparaison_drift_rate_samples.csv
+  - M3-bf16-F500/seed_6_test_time_models_comparaison_drift_rate_samples.csv
+  - M3-bf16-F500/seed_7_test_time_models_comparaison_drift_rate_samples.csv
+  - M3-bf16-F500/seed_8_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS+CP-fast-CudaG/seed_1_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS+CP-fast-CudaG/seed_2_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS+CP-fast-CudaG/seed_3_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS+CP-fast-CudaG/seed_4_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS+CP-fast-CudaG/seed_5_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS+CP-fast-CudaG/seed_6_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS+CP-fast-CudaG/seed_7_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS+CP-fast-CudaG/seed_8_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS+CP/seed_1_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS+CP/seed_2_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS+CP/seed_3_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS+CP/seed_4_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS+CP/seed_5_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS+CP/seed_6_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS+CP/seed_7_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS+CP/seed_8_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS-cudaG/seed_1_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS-cudaG/seed_2_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS-cudaG/seed_3_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS-cudaG/seed_4_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS-cudaG/seed_5_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS-cudaG/seed_6_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS/seed_1_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS/seed_2_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS/seed_3_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS/seed_4_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS/seed_5_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS/seed_6_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS/seed_7_test_time_models_comparaison_drift_rate_samples.csv
+  - ours_Dist-MTM-Pro-MS/seed_8_test_time_models_comparaison_drift_rate_samples.csv
