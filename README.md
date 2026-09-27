@@ -1,4 +1,7 @@
-# MTM-Pro: From Contraction to Chaos: World Models for Robots that Resist Compounding Error
+# FROM CONTRACTION TO CHAOS: COMPOUNDING ERROR RESISTANT WORLD MODELS FOR ROBOTS
+
+> This anonymized repository accompanies our paper under review at ICLR 2027 on OpenReview:
+> [https://openreview.net/forum?id=IKsP4J04TN](https://openreview.net/forum?id=IKsP4J04TN&invitationId=ICLR.cc%2F2027%2FConference%2FSubmission37661%2F-%2FFull_Submission&referrer=%5BTasks%5D%28%2Ftasks%29)
 
 Standalone, anonymized release of the source code, configurations and data required to reproduce the
 experiments of the paper (ICLR 2027 submission). It is a consolidated extract of a larger research
