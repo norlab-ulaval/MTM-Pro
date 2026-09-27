@@ -31,12 +31,11 @@ classifiers = [
 # are installed in editable mode by the Dockerfile (`pip install --no-deps --editable .` for MTM-Pro
 # itself, so the git requirements below are NOT resolved there and never override the editable
 # installs). They are declared for a plain `pip install .` outside docker: the packages are not
-# published on PyPI yet, so they are pulled from git, pinned to the same `ICLR-SUBMISSION-V1` tag
-# as the submodules.
+# published on PyPI yet, so they are pulled from git.
 dependencies = [
-    "trajectory-container-tools[ros,dev] @ git+https://github.com/norlab-ulaval/trajectory-container-tools.git@ICLR-SUBMISSION-V1",
-    "math-gymnasium[dev] @ git+https://github.com/norlab-ulaval/math-gymnasium.git@ICLR-SUBMISSION-V1",
-    "mbrl[dev] @ git+https://github.com/RedLeader962/mbrl-lib.git@ICLR-SUBMISSION-V1",
+    "trajectory-container-tools[ros,dev] @ git+https://github.com/norlab-ulaval/trajectory-container-tools.git",
+    "math-gymnasium[dev] @ git+https://github.com/norlab-ulaval/math-gymnasium.git",
+    "mbrl[dev] @ git+https://github.com/RedLeader962/mbrl-lib.git",
     "numpy<2",
     "pandas",
     "scipy",
