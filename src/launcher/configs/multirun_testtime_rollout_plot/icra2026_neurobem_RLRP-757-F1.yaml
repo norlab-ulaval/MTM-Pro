@@ -1,0 +1,1010 @@
+#
+# Hydra launch command with experiment cfg override:
+#   $ python3 launcher/multirun_testtime_rollout_plot.py multirun_testtime_rollout_plot@_global_=icra2026_neurobem_RLRP-757-F1
+#
+
+# ====Experiment===================================
+algorithm:
+  name: 'ICRA2026'
+
+overrides:
+  experiment: "RLRP-757-F1-neurobem-multirun-test-time-plot"
+
+# render_type: standalone # <--
+# render_type: latex_includegraphics
+latex_includegraphics:
+  save_path: artifact/ICRA2026/latex_includegraphics/${overrides.experiment}
+  file_name: rlrp757_neurobem_F1_20to10
+
+# Experiment data consolidation (RLRP-818). When enabled, each generated plot
+# ALSO dumps the numeric series it renders as one CSV per group under
+#   data/data_consolidated/${overrides.experiment}/<metric>/<grp_name>/
+# so the ICRA 2026 standalone plot functions (RLRP-817) can rebuild the identical
+# figure without re-running this pipeline. ⚠️ Enabling it IS the intent to write
+# into the version-controlled 'icra_2026_plot' submodule (commit it afterwards).
+# ⚠️ The drift rate is consolidated for the deployed-model rollout AND every
+# 'epoch_<E>' checkpoint rollout found on disk, regardless of
+# `show.generate_drift_rate_plot.train_epochs` (which only drives the RENDERING).
+# consolidate_data:
+#   enable: true # <--
+#   # enable: false # <--
+#   # output_dir: null  # TEST-ONLY destination override
+
+env_name: "NeuroBem (full dataset)"
+
+general_coment: "Full scale experiment on NeuroBem dataset
+"
+
+simulator_config: neurobem_full_dataset
+
+# regenerate_rollouts: false # ⚠️
+# # regenerate_rollouts: true # ⚠️ <--
+# regenerate:
+#   epoch_checkpoint_rollouts: # Require 'regenerate_rollouts: true'
+#     enable: false
+#     # enable: true # ⚠️ <--
+#     epoch_stride: null
+#     epochs: null
+
+show:
+  # When true, render a secondary x-axis on top of the General /
+  # Final-General / per-category / per-trajectory plots displaying
+  # timestamps in the unit declared by the active simulator config
+  # (``environment.data.original_timestamps_unit``). The primary x-axis
+  # remains in timesteps. Conversion uses
+  # ``environment.data.target_frame_rate`` (Hz) to map step -> seconds,
+  # then to the target unit. Default: false.
+  show_timestamp_xaxis: true
+
+  # target_is_ood: true
+  target_is_ood: false
+  average_across_trajectories: false # (false) show inter-trial variation, (true) shows inter-trajectory-pattern variation (caution mean of mean).
+  summary_table: false
+
+  # When true, render the y-axis (metric scale) in log10 scale on the General
+  # plot, per-category plots, and per-trajectory plots. Default: false.
+  y_axis_in_logscale: true
+  # y_axis_in_logscale_min_value: 5e-4
+  y_axis_in_logscale_min_value: 1e-3
+  x_axis_in_logscale: false
+  # x_axis_in_logscale: true
+
+  # breakdown: [null|'category'|'trajectory']
+  #   null        -> no breakdown plots
+  #   'category'  -> per-length-category plots (S/M/L) — previous default
+  #   'trajectory'-> per-`trajectory_name` plots (one plot per GT trajectory)
+  # breakdown: category
+  # breakdown: trajectory
+  breakdown: null
+
+  # general_length: [null|'min'|'max'|<int>]
+  #   null   -> skip general plot entirely
+  #   'min'  -> shortest trajectory length (selects all)
+  #   'max'  -> longest trajectory length (typically 1 trajectory)
+  #   <int>  -> select trajectories with GT length >= <int>, xlim.right=<int>
+  general_length: null
+  # general_length: min
+  # general_length: 1000
+  # general_length: 2000
+  # general_length: 3600
+  # general_length: 8000
+
+  # ... Ground-truth-feed warm-up interval treatment (RLRP-733) ...................
+  # During the warm-up interval (timesteps 0 .. ground_truth_feed_warmup_steps)
+  # the model is fed ground truth, so its error is artificially near-zero. On a
+  # log-scale time axis (`x_axis_in_logscale: true`) these early timesteps get
+  # magnified, visually flattening the meaningful compounded-prediction region.
+  # This option controls how that interval is treated on EVERY time-axis plot
+  # (General, Final-General, per-category, per-trajectory, and the drift-rate
+  # plot).
+  #
+  # ground_truth_feed_warmup.mode: [null|'discard'|'reference_line']
+  #   null             -> no treatment (current behavior; omit the block for the same)
+  #   'discard'        -> clamp the left x-limit to the warm-up boundary
+  #                       (the warm-up region is not shown)
+  #   'reference_line' -> keep all data but draw a dashed vertical marker at
+  #                       the warm-up boundary (log-scale faithful; the marker
+  #                       is drawn in data coordinates)
+  #
+  # The warm-up step count is ALWAYS auto-derived from each recorded rollout's
+  # saved Hydra config (deploy.target_experiment.ground_truth_feed_warmup_steps)
+  # — there is no manual override. If the contributing experiments were recorded
+  # with different warm-up lengths the pipeline fails fast with an informative
+  # error (they cannot be meaningfully compared on a shared axis). A value of 0
+  # is a valid warm-up length ("no warm-up") and is honored, not skipped.
+  ground_truth_feed_warmup: # <--
+    # mode: null
+    # mode: reference_line
+    mode: discard
+
+  # ... Final general plot (all-trajectory aggregation) ............................
+  # Renders an additional plot aggregating EVERY trajectory regardless of length,
+  # with a light std band (mean ± 1·std) and a dark SEM band (mean ± 2·SEM).
+  # The dark SEM band naturally widens to the right where fewer trajectories
+  # contribute. Note: `variation_type` is fixed to `group_mae_std` for this plot.
+  generate_final_general_plot:
+    render: false
+    skip_nan_contaminated_mae: true
+    skip_nan_contaminated_std_uncertainty: true
+
+  # ... C-MAE drift-rate plot .....................................................
+  # Renders one curve per group of the cumulative MAE divided by
+  # (timestep · cumulative GT path length), paired per-rollout with its
+  # matching GT trajectory (by `_trajectory_name`).
+  #   length_cutoff: [null|<int>]  (minimum-trajectory-length selector, RLRP-734)
+  #     null   -> select ALL trajectories; horizon = shortest trajectory length
+  #     <int>  -> select trajectories with (trajectory length >= <int>);
+  #               horizon = <int> (each retained rollout trimmed to length_cutoff)
+  generate_drift_rate_plot:
+    render: true
+    # render: false
+
+    # ... Per-graphic-type figure size (optional) ...............................
+    # Personalize the figure size of THIS graphic only, per render type:
+    #   width_screen / height_screen -> `render_type: standalone`
+    #   width_latex  / height_latex  -> `render_type: latex_includegraphics`
+    # Each value is either an arbitrary number (inches), the name of a preset
+    # declared in `pipeline/multirun_testtime_rollout_plot_pipeline.yaml`
+    # (e.g. `single_column_width`, `double_column_width`), or a scaled preset
+    # (e.g. `double_column_width * 0.5`). An omitted key falls back to the
+    # render-type `figsize`.
+    # width_screen: 35
+    # height_screen: 14
+    # width_latex: double_column_width
+    # height_latex: 1.4
+
+    # length_cutoff: null # Options: null->trajectories smallest lentgh, int->select all trajectories of length >= to length_cutoff
+    # length_cutoff: null
+    # length_cutoff: 250
+    # length_cutoff: 500
+    # length_cutoff: 1000
+    length_cutoff: 2612 # S-1 <-- ICRA2026
+    # length_cutoff: 2613 # = S
+    # length_cutoff: 3576 # M-1
+    # length_cutoff: 5000 # > M
+    # length_cutoff: 10565 # L-1
+
+    # neurobem groups:
+    #   S: 2613
+    #   M: 3577
+    #   L: 10566
+
+    # `train_epochs` drives the iteration: null (deployed/final model, legacy),
+    # a single int, a list of int (a SERIES of training epochs -> one figure
+    # per epoch, each file prefixed with `<train_epoch>_epoch_`), or `all` to
+    # auto-discover and render every available `epoch_<E>` snapshot.
+    train_epochs: null
+    # train_epochs: all  # Auto-discover every available training epoch snapshot
+    # train_epochs: [100, 200, 300]  # Series of training epochs (one figure each) <--
+    # Assemble the produced PNG series into a 1-fps slideshow video (`ffmpeg`).
+    generate_diaporama: false  # Options: true->build the .mp4 slideshow, false->skip
+    # generate_diaporama: true  # Options: true->build the .mp4 slideshow, false->skip
+    diaporama_fps: 1.0        # Frames per second (each image shown 1/fps seconds)
+    # top_ylim: 1e-1
+    # top_ylim: 1.5e+2 # For logscale OoD
+    # bottom_ylim: 5e-4 # For logscale
+    # top_ylim: 1.0e-1 # For logscale InD
+    # top_ylim: 1.0e+2 # For logscale InD
+    # top_ylim: 5.0e+1 # For logscale InD
+    top_ylim: 1.0e+1 # For logscale InD <--
+    bottom_ylim: 1.0e-3 # For logscale InD GT warmup discarded <--
+    # bottom_ylim: 5.0e-4 # For logscale InD GT warmup discarded
+    # top_ylim: 5e-1 # OoD
+    # bottom_ylim: 1.0e-2 # For logscale OoD GT warmup discarded
+
+    # ... Per-train-epoch C-MAE drift-rate plot (RLRP-773 W9) ....................
+    # Opt-in NEW companion plot: one point per discovered `epoch_<E>` training
+    # snapshot under `<experiment_base>/epoch_checkpoints_rollouts/` (X axis is
+    # the TRAINING EPOCH, Y axis is the same C-MAE drift-rate reduced to a
+    # per-epoch scalar). Default OFF (`render: false`) => the drift plot above
+    # runs UNCHANGED, and this is a strict no-op when no per-epoch rollout tree
+    # exists. Every sub-key below is optional; when omitted it inherits from the
+    # parent `generate_drift_rate_plot` block (`length_cutoff`, `drift_type`) or
+    # the global default (`y_axis_in_logscale`).
+    per_train_epoch:
+      render: false
+      # render: true
+      # drift_type: "timesteps"   # inherits parent when omitted; Options: "timesteps", "path_length"
+      # length_cutoff: 250        # inherits parent when omitted
+      # list of int (a SERIES of horizons -> one figure per horizon, each saved
+      # file prefixed with `<length_cutoff>_horizon_<plot_name>.png`), or an
+      # INTERVAL mapping `{start: <int>, stop: <int>, step: <int>}` which is
+      # expanded to one horizon per `step` over `[start, stop]` (`stop` is
+      # INCLUSIVE when it lands on a step boundary). `step` defaults to 1.
+      # length_cutoff: 5000       # inherits parent when omitted
+      # length_cutoff: 110  # Still in the warmup phase
+      # length_cutoff: 210  # Out of warmup phase for 10 step
+      # length_cutoff: 300  # Out of warmup phase for 100 step
+      # length_cutoff: [200, 210, 250, 300, 400, 800, 1600, 3200, 6400]  # Series of horizons (one figure each)
+      # length_cutoff: [200, 210, 250, 300, 400, 800, 1600, 3200, 6400]  # Series of horizons (one figure each)
+      # length_cutoff: {start: 200, stop: 2350, step: 25}  # Interval -> [200, 300, 400]
+      length_cutoff: {start: 200, stop: 1000, step: 100}  # Interval -> [200, 300, 400]
+      # Assemble the per-horizon PNG series into a 1-fps slideshow video
+      # (`ffmpeg` required); inherits the parent value when omitted.
+      generate_diaporama: false  # Options: true->build the .mp4 slideshow, false->skip
+      diaporama_fps: 4        # Frames per second (each image shown 1/fps seconds)
+      # y_axis_in_logscale: false # inherits the global default when omitted
+      # top_ylim: 1.0e-1          # For logscale
+      # bottom_ylim: 1.5e-3       # For logscale
+
+  generate_training_wall_clock_time_plot:
+    render: false
+    # render: true # <--
+    width_latex: single_column_width
+    height_latex: 1.3
+
+  generate_rollout_wall_clock_time_plot:
+    render: false
+
+
+  # .... Variation around the MAE ..........
+  # Option: group_mae_std, group_avg_uncertainty, group_avg_epi, group_avg_ale
+  variation_type: group_mae_std
+  # variation_type: group_avg_uncertainty
+  # variation_type: group_avg_ale
+  # variation_type: group_avg_epi
+
+  variation_scale: 1 # ★
+  # variation_scale: 2
+  # variation_scale: 10 # ★ to highlight ours
+
+
+  # ... Case 1: non-compounding.............
+  # cumulative_metric: true
+  # compounded_predictions_score: false
+  # top_ylim: 1500 # InD
+  # # top_ylim: 510000 # OoD
+  # # top_ylim: 0.15e+7 # OoD
+  # # top_ylim: null
+
+  # ... Case 2: compounding.................
+  cumulative_metric: true
+  # compounded_predictions_score: false # <--
+  compounded_predictions_score: true # <--
+  # top_ylim: null
+  # top_ylim: 1000
+  # top_ylim: 1e+4
+  # top_ylim: 0.25 # Avg drift, compouned pred, OoD
+  # top_ylim: 55000 # OoD
+  # top_ylim: 100000 # OoD
+  # top_ylim: 295000 # InD
+
+  # ... Case 3 .............................
+  # cumulative_metric: false
+  # compounded_predictions_score: true
+  # top_ylim: null
+
+  # ... Case 4 .............................
+  # cumulative_metric: false
+  # compounded_predictions_score: false
+  # top_ylim: null
+
+  # ... figure display .....................
+  grp_names:
+
+    # ....Baselines.........................
+    - "AR-Det-MLP"
+    - "AR-ProbMLP"
+    - "AR-GRU"
+    - "AR-LSTM"
+    - "AR-TCN"
+    - "AR-TCN-bf16-CudaG"
+    # - "E2E-TCN"
+    # - "M3"
+    - "E2E-TCN-bf16-F500"
+    - "M3-bf16-F500"
+    # - "E2E-TCN-F20"
+    # - "M3-F20"
+    # - "TBM-Det F=5"
+    # - "TBM-Det F=20"
+    # - "TBM-Prob"
+
+    # ....Our.....................
+    - "(ours) Dist-MTM-Pro-MS+CP"
+    - "(ours) Dist-MTM-Pro-MS+CP-fast-CudaG"
+    - "(ours) Dist-MTM-Pro-MS"
+
+groups:
+
+  # ====Multistep objective========================================================================
+
+  - grp_name: "AR-Det-MLP"
+    gpr_short_name: "AR-MLP-Det"
+    comment: "[20→1x10]"
+    # line_style: "dotted"
+    line_style: "dashed"
+    ttrpm_dir: TTRPM_Deterministic_MLP_Auto-regressive_MS_unroll_model_PR_rolloutFalse
+    experiments:
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/AR-MLP-DET/2026.09.06/123721205284
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+          - A_trj_len={HI:20,HO:10},trial_nb=3
+          - A_trj_len={HI:20,HO:10},trial_nb=4
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/AR-MLP-DET/2026.09.06/123721209720
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+          - A_trj_len={HI:20,HO:10},trial_nb=3
+          - A_trj_len={HI:20,HO:10},trial_nb=4
+
+
+  - grp_name: "AR-ProbMLP"
+    gpr_short_name: "AR-MLP-Prob"
+    comment: "[20→1x10]"
+    # line_style: "dotted"
+    line_style: "dashed"
+    ttrpm_dir: TTRPM_Probabilisitic_MLP_Auto-regressive_MS_unroll_model_PR_rolloutFalse
+    experiments:
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/AR-MLP-PROB/2026.09.05/125012198586
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+          - A_trj_len={HI:20,HO:10},trial_nb=3
+          - A_trj_len={HI:20,HO:10},trial_nb=4
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/AR-MLP-PROB/2026.09.05/125014208495
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+          - A_trj_len={HI:20,HO:10},trial_nb=3
+          - A_trj_len={HI:20,HO:10},trial_nb=4
+
+
+  - grp_name: "AR-GRU"
+    gpr_short_name: "AR-GRU"
+    comment: "[20→1x10]"
+    # line_style: "dotted"
+    line_style: "dashed"
+    ttrpm_dir: TTRPM_GRU_Deterministic_Auto-regressive_MS_unroll_model_PR_rolloutFalse
+    experiments:
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/GRU/2026.09.06/122640575290
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/GRU/2026.09.06/122640748818
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/GRU/2026.09.06/122641512621
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/GRU/2026.09.06/123721013026
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+
+
+  - grp_name: "AR-LSTM"
+    gpr_short_name: "AR-LSTM"
+    comment: "[20→1x10]"
+    #   line_style: "dotted"
+    line_style: "dashed"
+    ttrpm_dir: TTRPM_LSTM_Deterministic_Auto-regressive_MS_unroll_model_PR_rolloutFalse
+    experiments:
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/LSTM/2026.09.05/123429505082
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/LSTM/2026.09.05/123429506994
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/LSTM/2026.09.05/124214107102
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/LSTM/2026.09.05/124603863526
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+
+
+  - grp_name: "AR-TCN"
+    gpr_short_name: "AR-TCN"
+    comment: "[20→1x10]"
+    # line_style: "dotted"
+    line_style: "dashed"
+    ttrpm_dir: TTRPM_TCN_Deterministic_Auto-regressive_MS_unroll_model_PR_rolloutFalse
+    experiments:
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/TCN/2026.09.05/050419243736
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/TCN/2026.09.05/050419244361
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/TCN/2026.09.05/050419245039
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/TCN/2026.09.05/050419245537
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+
+
+  - grp_name: "AR-TCN-bf16-CudaG"
+    gpr_short_name: "AR-TCN-bf16-CudaG"
+    comment: "[20→1x10] mix-precision and cuda-graph enabled"
+    # line_style: "dotted"
+    line_style: "dashed"
+    ttrpm_dir: TTRPM_TCN_Deterministic_Auto-regressive_MS_unroll_model_PR_rolloutFalse
+    experiments:
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/TCN-bf16+cudagraph/2026.09.20/182858562367
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+          - A_trj_len={HI:20,HO:10},trial_nb=3
+          # - A_trj_len={HI:20,HO:10},trial_nb=4 # TODO: incomplete epoch 400 checkpoint trajectory rollout
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/TCN-bf16+cudagraph/2026.09.20/185343790276
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+          - A_trj_len={HI:20,HO:10},trial_nb=3
+          - A_trj_len={HI:20,HO:10},trial_nb=4
+
+
+
+  # ======MS2MS baselines==========================================================================
+
+  - grp_name: "E2E-TCN"
+    gpr_short_name: "E2E-TCN"
+    comment: "[20→10x1]"
+    # line_style: "dotted"
+    line_style: "dashdot"
+    ttrpm_dir: TTRPM_End-to-End-TCN_one-shot_MS-MS_forecast_baseline_PR_rolloutFalse
+    experiments:
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/E2E-TCN/2026.09.11/074238700352
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/E2E-TCN/2026.09.11/074238703958
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/E2E-TCN/2026.09.12/194605346516
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/E2E-TCN/2026.09.12/223915996375
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+
+  - grp_name: "E2E-TCN-F20"
+    gpr_short_name: "E2E-TCN F20"
+    comment: "[20→20x1]"
+    # line_style: "dotted"
+    line_style: "dashdot"
+    ttrpm_dir: TTRPM_End-to-End-TCN_one-shot_MS-MS_forecast_baseline_PR_rolloutFalse
+    experiments:
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/E2E-TCN/2026.09.11/074238700352
+        multirun_paths:
+          - A_trj_len={HI:20,HO:20},trial_nb=1
+          - A_trj_len={HI:20,HO:20},trial_nb=2
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/E2E-TCN/2026.09.11/074238703958
+        multirun_paths:
+          - A_trj_len={HI:20,HO:20},trial_nb=1
+          - A_trj_len={HI:20,HO:20},trial_nb=2
+
+
+  - grp_name: "E2E-TCN-bf16-F500"
+    gpr_short_name: "E2E-TCN-bf16-F500"
+    comment: "[20→50x1] mix-precision enabled"
+    # line_style: "dotted"
+    line_style: "dashdot"
+    ttrpm_dir: TTRPM_End-to-End-TCN_one-shot_MS-MS_forecast_baseline_PR_rolloutFalse
+    experiments:
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/E2E-TCN-F500/2026.09.18/032958884610
+        multirun_paths:
+          - A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=1
+          - A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=2
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/E2E-TCN-F500/2026.09.18/032958890193
+        multirun_paths:
+          - A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=1
+          - A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=2
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/E2E-TCN-F500/2026.09.18/032958913130
+        multirun_paths:
+          - A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=1
+          - A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=2
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/E2E-TCN-F500/2026.09.18/032959047031
+        multirun_paths:
+          - A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=1
+          - A_trj_len={HI:20,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=2
+
+
+  - grp_name: "M3"
+    gpr_short_name: "M3"
+    comment: "[20→10x1]"
+    # line_style: "dotted"
+    line_style: "dashdot"
+    ttrpm_dir: TTRPM_M3_multi-step_model_horizon-indexed_MS-MS_forecast_baseline_PR_rolloutFalse
+    experiments:
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/M3/2026.09.12/195042102177
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+          - A_trj_len={HI:20,HO:10},trial_nb=3
+          - A_trj_len={HI:20,HO:10},trial_nb=4
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/M3/2026.09.12/195049740515
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+          - A_trj_len={HI:20,HO:10},trial_nb=3
+          - A_trj_len={HI:20,HO:10},trial_nb=4
+
+  - grp_name: "M3-bf16-F500"
+    gpr_short_name: "M3-bf16-F500"
+    comment: "[1→50x1] mix-precision enabled"
+    # line_style: "dotted"
+    line_style: "dashdot"
+    ttrpm_dir: TTRPM_M3_multi-step_model_horizon-indexed_MS-MS_forecast_baseline_PR_rolloutFalse
+    experiments:
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/M3-F500/2026.09.18/033014345321
+        multirun_paths:
+          - A_trj_len={HI:1,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=1
+          - A_trj_len={HI:1,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=2
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/M3-F500/2026.09.18/033014346242
+        multirun_paths:
+          - A_trj_len={HI:1,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=1
+          - A_trj_len={HI:1,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=2
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/M3-F500/2026.09.18/033014351133
+        multirun_paths:
+          - A_trj_len={HI:1,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=1
+          - A_trj_len={HI:1,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=2
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/M3-F500/2026.09.18/033016147772
+        multirun_paths:
+          - A_trj_len={HI:1,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=1
+          - A_trj_len={HI:1,HO:500},pipeline.ms_hdf5_allow_generate=False,trial_nb=2
+
+
+  # - grp_name: "TBM-Det F=5"
+  #   gpr_short_name: "TBM-Det F=5"
+  #   comment: "[20→10x1]"
+  #   # line_style: "dotted"
+  #   line_style: "dashdot"
+  #   ttrpm_dir: TTRPM_Trajectory-Based_Model_horizon-indexed_MS-MS_forecast_baseline_PR_rolloutFalse
+  #   experiments:
+  #     - experiment_path: artifact/ICRA2026/RLRP-736-UGV/TBM-DET/2026.07.21/005901296882
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=1
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=2
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=3
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=4
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=5
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=6
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=7
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=8
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=9
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=10
+  #
+  # - grp_name: "TBM-Det F=20"
+  #   gpr_short_name: "TBM-Det F=20"
+  #   comment: "[20→10x1]"
+  #   # line_style: "dotted"
+  #   line_style: "dashdot"
+  #   ttrpm_dir: TTRPM_Trajectory-Based_Model_horizon-indexed_MS-MS_forecast_baseline_PR_rolloutFalse
+  #   experiments:
+  #     - experiment_path: artifact/ICRA2026/RLRP-736-UGV/TBM-DET/2026.07.21/005901296882
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:20},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=1
+  #         - A_trj_len={HI:20,HO:20},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=2
+  #         - A_trj_len={HI:20,HO:20},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=3
+  #         - A_trj_len={HI:20,HO:20},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=4
+  #         - A_trj_len={HI:20,HO:20},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=5
+  #         - A_trj_len={HI:20,HO:20},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=6
+  #         - A_trj_len={HI:20,HO:20},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=7
+  #         - A_trj_len={HI:20,HO:20},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=8
+  #         - A_trj_len={HI:20,HO:20},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=9
+  #         - A_trj_len={HI:20,HO:20},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=10
+
+  # - grp_name: "TBM-Prob"
+  #   gpr_short_name: "TBM-Prob"
+  #   comment: "[20→10x1]"
+  #   # line_style: "dotted"
+  #   line_style: "dashdot"
+  #   ttrpm_dir: TTRPM_Trajectory-Based_Model_horizon-indexed_MS-MS_forecast_baseline_PR_rolloutFalse
+  #   experiments:
+  #     - experiment_path: artifact/AAAI2026/RLRP-707-UGV/TBM-PROB/2026.07.07/021601942372
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_probabilistic,trial_nb=1
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_probabilistic,trial_nb=2
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_probabilistic,trial_nb=3
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_probabilistic,trial_nb=4
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_probabilistic,trial_nb=5
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_probabilistic,trial_nb=6
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_probabilistic,trial_nb=7
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_probabilistic,trial_nb=8
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_probabilistic,trial_nb=9
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_probabilistic,trial_nb=10
+  #     # - experiment_path: artifact/AAAI2026/RLRP-707-UGV/E2E-TCN/2026.07.06/234941340139
+  #     #   multirun_paths:
+  #     #     - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_probabilistic,trial_nb=11
+  #     #     - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_probabilistic,trial_nb=12
+  #     #     - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_probabilistic,trial_nb=13
+  #     #     - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_probabilistic,trial_nb=14
+
+
+    # ====Multistep prediction mixture model=========================================================
+
+
+  - grp_name: "(ours) Dist-MTM-Pro-MS+CP"
+    # gpr_short_name: "(ours) Dist-MTM-Pro-MS+CP"
+    # gpr_short_name: "(ours) Dist-MTM-Pro"
+    gpr_short_name: "(ours) MTM-Pro" # <--
+    comment: "[20→10→1x10]"
+    # line_style: "dotted"
+    line_style: "solid"
+    ttrpm_dir: TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Distributional_MTM-Pro_PR_rolloutFalse
+    experiments:
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/DMtm-Pro-MS+CP-B1b-nec/2026.09.06/021947317774
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/DMtm-Pro-MS+CP-B1b-nec/2026.09.06/021947322298
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/DMtm-Pro-MS+CP-B1b-nec/2026.09.06/122334858895
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/DMtm-Pro-MS+CP-B1b-nec/2026.09.06/122640836292
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+
+
+  - grp_name: "(ours) Dist-MTM-Pro-MS+CP-fast-CudaG"
+    # gpr_short_name: "(ours) Dist-MTM-Pro-MS+CP"
+    gpr_short_name: "(ours) MTM-Pro-cg"
+    comment: "[20→10→1x10]"
+    # line_style: "dotted"
+    line_style: "solid"
+    ttrpm_dir: TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Distributional_MTM-Pro_PR_rolloutFalse
+    experiments:
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/DMtm-Pro-MS+CP+cudagraph-B1b-nec/2026.09.20/185343884219
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=3
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=4
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/DMtm-Pro-MS+CP+cudagraph-B1b-nec/2026.09.20/185721132387
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=3
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=4
+
+
+  # - grp_name: "(ours) Dist-MTM-Pro-MS+CP+Ga+I2Mix-E5"
+  #   gpr_short_name: "(ours) Dist-MTM-Pro-MS+CP+Ga+I2Mix-E5"
+  #   comment: "[20→10→1x10]"
+  #   # line_style: "dotted"
+  #   line_style: "solid"
+  #   ttrpm_dir: TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Distributional_MTM-Pro_PR_rolloutFalse
+  #   experiments:
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E5/DMtm-Pro-MS+CP+Ga+I2Mix/2026.08.19/035053024429
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #
+  # - grp_name: "(ours) Dist-MTM-Pro-MS+CP+I2Mix-E5"
+  #   gpr_short_name: "(ours) Dist-MTM-Pro-MS+CP+I2Mix-E5"
+  #   comment: "[20→10→1x10]"
+  #   # line_style: "dotted"
+  #   line_style: "solid"
+  #   ttrpm_dir: TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Distributional_MTM-Pro_PR_rolloutFalse
+  #   experiments:
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E5/DMtm-Pro-MS+CP+I2Mix/2026.08.19/034948260186
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #
+  # - grp_name: "(ours) Dist-MTM-Pro-MS+I2Mix-E5"
+  #   gpr_short_name: "(ours) Dist-MTM-Pro-MS+I2Mix-E5"
+  #   comment: "[20→10→1x10]"
+  #   # line_style: "dotted"
+  #   line_style: "solid"
+  #   ttrpm_dir: TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Distributional_MTM-Pro_PR_rolloutFalse
+  #   experiments:
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E5/DMtm-Pro-MS+I2Mix/2026.08.19/035009237143
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #
+  # - grp_name: "(ours) Dist-MTM-Pro-MS+SS"
+  #   gpr_short_name: "(ours) Dist-MTM-Pro-MS+SS"
+  #   comment: "[20→10→1x10]"
+  #   # line_style: "dotted"
+  #   line_style: "solid"
+  #   ttrpm_dir: TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Distributional_MTM-Pro_PR_rolloutFalse
+  #   experiments:
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/DMtm-Pro-MS+SS/2026.08.16/232835162047
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/DMtm-Pro-MS+SS/2026.08.16/232835173650
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #     # - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/AR-MLP-PROB/2026.08.16/110845987891
+  #     #   multirun_paths:
+  #     #     - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #     #     - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #     # - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/AR-MLP-PROB/2026.08.16/110845988186
+  #     #   multirun_paths:
+  #     #     - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #     #     - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #
+  # - grp_name: "(ours) Dist-MTM-Pro-MS+SS+QuatEC"
+  #   gpr_short_name: "(ours) Dist-MTM-Pro-MS+SS+QuatEC"
+  #   comment: "[20→10→1x10]"
+  #   # line_style: "dotted"
+  #   line_style: "solid"
+  #   ttrpm_dir: TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Distributional_MTM-Pro_PR_rolloutFalse
+  #   experiments:
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/DMtm-Pro-MS+SS+QuatEC/2026.08.18/015000347389
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #     # - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/DMtm-Pro-MS+SS/2026.08.16/232835173650
+  #     #   multirun_paths:
+  #     #     - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #     #     - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #     # - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/AR-MLP-PROB/2026.08.16/110845987891
+  #     #   multirun_paths:
+  #     #     - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #     #     - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #     # - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/AR-MLP-PROB/2026.08.16/110845988186
+  #     #   multirun_paths:
+  #     #     - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #     #     - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+
+  - grp_name: "(ours) Dist-MTM-Pro-MS"
+    gpr_short_name: "(ours) Dist-MTM-Pro-MS"
+    comment: "[20→10→1x10]"
+    # line_style: "dotted"
+    line_style: "solid"
+    ttrpm_dir: TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Distributional_MTM-Pro_PR_rolloutFalse
+    experiments:
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/DMtm-Pro-MS-B1b-nec/2026.09.06/125700780531
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/DMtm-Pro-MS-B1b-nec/2026.09.06/130021704501
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/DMtm-Pro-MS-B1b-nec/2026.09.06/130021705030
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+      - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-F1/DMtm-Pro-MS-B1b-nec/2026.09.06/130831313078
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+
+  # - grp_name: "(ours) Dist-MTM-Pro-MS+Ga+I2Mix"
+  #   gpr_short_name: "(ours) Dist-MTM-Pro-MS+Ga+I2Mix"
+  #   comment: "[20→10→1x10]"
+  #   # line_style: "dotted"
+  #   line_style: "solid"
+  #   ttrpm_dir: TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Distributional_MTM-Pro_PR_rolloutFalse
+  #   experiments:
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/DMtm-Pro-MS+Ga+I2Mix/2026.08.17/221551000880
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #     # - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/DMtm-Pro-MS/2026.08.16/232835169783
+  #     #   multirun_paths:
+  #     #     - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #     #     - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #     # - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/AR-MLP-PROB/2026.08.16/110845987891
+  #     #   multirun_paths:
+  #     #     - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #     #     - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #     # - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/AR-MLP-PROB/2026.08.16/110845988186
+  #     #   multirun_paths:
+  #     #     - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #     #     - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #
+  #
+  # - grp_name: "(ours) Dist-MTM-Pro-MS+I2Mix"
+  #   gpr_short_name: "(ours) Dist-MTM-Pro-MS+I2Mix"
+  #   comment: "[20→10→1x10]"
+  #   # line_style: "dotted"
+  #   line_style: "solid"
+  #   ttrpm_dir: TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Distributional_MTM-Pro_PR_rolloutFalse
+  #   experiments:
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/DMtm-Pro-MS+I2Mix/2026.08.17/221331748132
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #     # - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/DMtm-Pro-MS/2026.08.16/232835169783
+  #     #   multirun_paths:
+  #     #     - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #     #     - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #     # - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/AR-MLP-PROB/2026.08.16/110845987891
+  #     #   multirun_paths:
+  #     #     - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #     #     - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #     # - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/AR-MLP-PROB/2026.08.16/110845988186
+  #     #   multirun_paths:
+  #     #     - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #     #     - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+
+
+  # - grp_name: "(ours) Part-MTM-Pro-MS+CP"
+  #   gpr_short_name: "(ours) Part-MTM-Pro-MS+CP"
+  #   comment: "[20→10→1x10]"
+  #   # line_style: "dotted"
+  #   line_style: "solid"
+  #   ttrpm_dir: TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Particle_MTM-Pro_PR_rolloutFalse
+  #   experiments:
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/AR-MLP-PROB/2026.08.15/220709375165
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/AR-MLP-PROB/2026.08.15/220712244803
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/AR-MLP-PROB/2026.08.16/110845987891
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/AR-MLP-PROB/2026.08.16/110845988186
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+
+  # - grp_name: "(ours) Part-MTM-Pro-MS+SS"
+  #   gpr_short_name: "(ours) Part-MTM-Pro-MS+SS"
+  #   comment: "[20→10→1x10]"
+  #   # line_style: "dotted"
+  #   line_style: "solid"
+  #   ttrpm_dir: TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Particle_MTM-Pro_PR_rolloutFalse
+  #   experiments:
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/PMtm-Pro-MS+SS/2026.08.18/123755877600
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/PMtm-Pro-MS+SS/2026.08.18/155236541912
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #     # - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/AR-MLP-PROB/2026.08.16/110845987891
+  #     #   multirun_paths:
+  #     #     - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #     #     - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #     # - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/AR-MLP-PROB/2026.08.16/110845988186
+  #     #   multirun_paths:
+  #     #     - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #     #     - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #
+  # - grp_name: "(ours) Part-MTM-Pro-MS"
+  #   gpr_short_name: "(ours) Part-MTM-Pro-MS"
+  #   comment: "[20→10→1x10]"
+  #   # line_style: "dotted"
+  #   line_style: "solid"
+  #   ttrpm_dir: TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Particle_MTM-Pro_PR_rolloutFalse
+  #   experiments:
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/PMtm-Pro-MS/2026.08.16/215715817891
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/PMtm-Pro-MS/2026.08.16/215816823355
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/PMtm-Pro-MS/2026.08.17/215239975431
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/PMtm-Pro-MS/2026.08.17/215240010087
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #
+  # - grp_name: "(ours) Part-MTM-Pro-MS+I2Mix-E5"
+  #   gpr_short_name: "(ours) Part-MTM-Pro-MS+I2Mix-E5"
+  #   comment: "[20→10→1x10]"
+  #   # line_style: "dotted"
+  #   line_style: "solid"
+  #   ttrpm_dir: TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Particle_MTM-Pro_PR_rolloutFalse
+  #   experiments:
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E5/PMtm-Pro-MS+I2Mix/2026.08.19/035823646732
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #
+  #
+  # - grp_name: "(ours) Part-MTM-Pro-MS+CP+I2Mix-E5"
+  #   gpr_short_name: "(ours) Part-MTM-Pro-MS+CP+I2Mix-E5"
+  #   comment: "[20→10→1x10]"
+  #   # line_style: "dotted"
+  #   line_style: "solid"
+  #   ttrpm_dir: TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Particle_MTM-Pro_PR_rolloutFalse
+  #   experiments:
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E5/PMtm-Pro-MS+CP+I2Mix/2026.08.19/035925280119
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #
+  #
+  # # - grp_name: "(ours) RePart-MTM-Pro-MS+CP"
+  # #   gpr_short_name: "(ours) RePart-MTM-Pro-MS+CP"
+  # #   comment: "[20→10→1x10]"
+  # #   # line_style: "dotted"
+  # #   line_style: "solid"
+  # #   ttrpm_dir: TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Resampled_Particle_MTM-Pro_PR_rolloutFalse
+  # #   experiments:
+  # #     - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/AR-MLP-PROB/2026.08.15/220709375165
+  # #       multirun_paths:
+  # #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  # #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  # #     - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/AR-MLP-PROB/2026.08.15/220712244803
+  # #       multirun_paths:
+  # #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  # #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  # #     - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/AR-MLP-PROB/2026.08.16/110845987891
+  # #       multirun_paths:
+  # #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  # #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  # #     - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/AR-MLP-PROB/2026.08.16/110845988186
+  # #       multirun_paths:
+  # #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  # #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  # #
+  #
+  # - grp_name: "(ours) RePart-MTM-Pro-MS+SS"
+  #   gpr_short_name: "(ours) RePart-MTM-Pro-MS+SS"
+  #   comment: "[20→10→1x10]"
+  #   # line_style: "dotted"
+  #   line_style: "solid"
+  #   ttrpm_dir: TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Resampled_Particle_MTM-Pro_PR_rolloutFalse
+  #   experiments:
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/RePMtm-Pro-MS+SS/2026.08.18/105820092689
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #     # - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/AR-MLP-PROB/2026.08.15/220712244803
+  #     #   multirun_paths:
+  #     #     - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #     #     - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #     # - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/AR-MLP-PROB/2026.08.16/110845987891
+  #     #   multirun_paths:
+  #     #     - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #     #     - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #     # - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/AR-MLP-PROB/2026.08.16/110845988186
+  #     #   multirun_paths:
+  #     #     - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #     #     - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #
+  # # - grp_name: "(ours) RePart-MTM-Pro-MS"
+  # #   gpr_short_name: "(ours) RePart-MTM-Pro-MS"
+  # #   comment: "[20→10→1x10]"
+  # #   # line_style: "dotted"
+  # #   line_style: "solid"
+  # #   ttrpm_dir: TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Resampled_Particle_MTM-Pro_PR_rolloutFalse
+  # #   experiments:
+  # #     - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/AR-MLP-PROB/2026.08.15/220709375165
+  # #       multirun_paths:
+  # #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  # #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  # #     - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/AR-MLP-PROB/2026.08.15/220712244803
+  # #       multirun_paths:
+  # #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  # #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  # #     - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/AR-MLP-PROB/2026.08.16/110845987891
+  # #       multirun_paths:
+  # #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  # #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  # #     - experiment_path: artifact/ICRA2026/RLRP-757-Neurobem-E4/AR-MLP-PROB/2026.08.16/110845988186
+  # #       multirun_paths:
+  # #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  # #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  # #

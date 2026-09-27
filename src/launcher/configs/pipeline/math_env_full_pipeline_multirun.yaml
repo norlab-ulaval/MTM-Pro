@@ -1,0 +1,93 @@
+
+name: "math_env_full_pipeline_multirun"
+
+# RLRP-824 (FR1): replay-buffer (legacy, default) | dataloader (in-memory lazy window path, required
+# for `horizon_len > history_len`). See `math_env_full_pipeline.yaml`.
+data_manager: replay-buffer
+
+# RLRP-786 training-step performance levers: declared ONCE in `global_config.yaml` (`pipeline:` block,
+# see `global_config.README.md`). EXPERIMENT pipeline (every `multirun_overrides/math_env/**` cfg
+# composes it) -> `fast` (dev/debug-only instrumentation of the training step OFF; `torch.equal` to
+# `dev`). `+dev@_global_=math_env_debug` (any `dev/*debug*` overlay) sets `dev` back. The CUDA-graph
+# captured step stays the global opt-in (`false`); enable per experiment with
+# `pipeline.cuda_graph_training_step=true`.
+performance_mode: fast
+
+dataloader:
+  normalizer_fit_max_windows: 65536
+  boundary_mode: pad
+  store_device: auto # auto | cpu | model | <torch device>, see `math_env_full_pipeline.yaml`
+
+steps:
+  test_rollout_InD: true
+  test_rollout_OOD: true
+  test_rollout_deterministic: true
+  test_rollout_probabilistic: false
+  test_rollout_ground_truth: true
+  test_rollout_compounded_pred: true
+  # RLRP-728 / RLRP-760 (S3): opt-in MS->MS forecast eval steps (default OFF). See
+  # `math_env_full_pipeline.yaml`; declared here so multirun override files merge WITHOUT `+`.
+  test_rollout_openloop_forecast: false
+  test_rollout_selffed_forecast: false
+
+test_rollout_openloop_forecast:
+  future_action_conditioning: plan # plan | last_action_hold | obs_only (`plan` only on F > H, FR14)
+
+test_rollout_selffed_forecast:
+  future_action_conditioning: plan # plan | last_action_hold | obs_only (`plan` only on F > H, FR14)
+  warmup_steps: null # null -> deploy.target_experiment.ground_truth_feed_warmup_steps
+
+plot:
+  figsize: [35,18]
+  figdpi: 50 # matplotlib defaut is dpi=100
+  save_dpi: 100 # matplotlib defaut is dpi=100, null to disable saving
+
+  # Note: Recommend using same scaling factors for both ale and epi. The options to use distinct
+  # ones exist mainly for development purposes.
+  ale_uncertainty_scaling: 10
+  epi_uncertainty_scaling: 10
+
+  show_environment_plot: false # ⚠️
+  save_environment_plot: false # ⚠️
+
+  render_dataset_exploration_plot: false
+  show_dataset_exploration_plot: false
+  show_loss_plot: true
+  show_prediction_plot: true
+
+  show_environment_1d_subplot_interval: null
+  show_deploy_prediction_1d_subplot_interval: null
+
+tensorboard:
+  batch_callback_execute_every_n: null # Option: <int>, null -> disabled batch callback
+  clear_tmp_directory_run_artifact_on_teardown: true
+
+  record_trajectory_pred_every_n_train_epoch: null # Default 500, set to null to skip
+  trajectory_record_step_size: 100 # Default 100
+  generate_model_graph: false
+  generate_gradient_figure: false
+  obs_dim_label: ["X", "Y", "Z"]
+  rollout_dim_label: ["X", "Y", "Z"]
+
+  enable_gradient_and_parameters_histogram: false
+  # A7 (RLRP-788): diagnostic meta-collection kill-switch (perf_RLRP-788_meta_collection_killswitch_plan_20260827.md).
+  enable_meta_collection: false
+  generate_model_parameters_head_leaf: false
+  generate_model_parameters: false
+  generate_model_gradients: false
+  generate_model_gradient_norm: false
+
+  generate_prediction_distributions: false
+  generate_prediction_rollout_mae: false
+
+
+# A8 (RLRP-783 follow-up): opt-in fused (CUDA) Adam that removes the per-parameter
+# `torch.optim.optimizer._get_value(step).item()` device->host sync
+# (`perf_RLRP-783_mtm_pro_models_code_optimization_plan_20260827.md`). Consumed by the main config
+# via `training_common.optimizer.adam_fused: ${oc.select:pipeline.optimizer.adam_fused,false}`.
+# NOTE fused Adam is NOT bit-exact vs the legacy single-tensor kernel and is CUDA-only (the RLRC
+# seam `change_optimizer` falls back to legacy off-CUDA). Enabled on this hot-path pipeline.
+optimizer:
+  adam_fused: true
+
+

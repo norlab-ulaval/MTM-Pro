@@ -1,0 +1,49 @@
+
+name: 'Single Global Loop ERLL (ablation / ERLL disabled)'
+
+# RLRP-727: ERLL loop selector (uder | pber | single_global_loop).
+# `single_global_loop` runs ONE fused training pass (is_init == is_final) with the ERLL machinery
+# disabled — the clean control for ablation studies and optimizer/LR validation.
+loop_kind: single_global_loop
+
+testtime_rollout_every_n_erll_epochs: 1
+
+# Follow-up to RLRP-727: intra-final-pass checkpoint cadence, counted in INNER training epochs. The
+# single fused pass IS the final pass, so setting N > 0 restores periodic best-model persistence for
+# this loop kind (0 = off / legacy: a single save at the end of the one pass).
+checkpoint_every_n_final_inner_epochs: 10
+
+# Constant batch size (no progressive growth). `gamma`/`limit` are pinned to `init_value` so any
+# schedule read degenerates to the constant, and downstream plotting helpers stay happy.
+batch_size:
+  init_value: 200
+  gamma: 1.0
+  limit: 200
+
+# One fused pass. The single pass takes the `is_final` branch and draws its epoch budget from
+# `final_max_num_epochs_train_model` (operator decision D2); `num_epochs_train_model: 0` is the
+# sentinel that tells the base to skip the per-erll-epoch divisor (legal ONLY for this loop kind).
+uder_num_epochs: 1
+num_epochs_train_model: 0
+final_max_num_epochs_train_model: 100 # Options: int or null => patience threshold
+
+feature_weight_scale_min: 1.0
+feature_weight_scale_max: 1.0
+
+# The outer per-pass LR envelope is inert for a single pass (g(0) = exp_decreassing**0 = 1.0), so the
+# realized LR reduces to the inner schedule — exactly the clean ablation control.
+uder_lr_schedule:
+  # RLRP-727 (B1) Law-U. For the single global pass g(0)=1, so the realized LR reduces to the inner
+  # schedule base*h(e) whether enabled or not — this loop is the clean ablation control.
+  law_u_enable: true # <-- # (PRIORITY) inprogress: validate `law_u_enable: true` (ref task RLRP-727)
+  warmup: null # Note: cfg with uder lr warmup disabled
+  # warmup:
+  #   uder_steps: 1
+  #   factor: 1.0
+  exp_decreassing: 0.90
+
+max_sequence_batches_per_loop_train: null # Options: int, null, 'match_optimizer_num_epoch'
+
+buffer_max_trajectory_len: null       # Option: int, null
+buffer_iterator_sequence_len: 20      # Disabled if buffer_max_trajectory_len: null
+val_buffer_iterator_sequence_len: 20  # ...

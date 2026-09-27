@@ -1,0 +1,143 @@
+# /////////////////////////////////////////////////////////////////////////////////////////////////
+#
+#                                       Pi-TCN Full Dataset
+#
+# Total train_val_trajectories trajectory length: 358619
+#
+# test_InD_trajectory length:
+#    0: 6454
+#    1: 2263
+#    2: 6981
+#    3: 2830
+#    4: 5173
+#    5: 3976
+#    6: 6333
+#    7: 3381
+#
+# Total test_InD_trajectory trajectory length: 37391
+#
+#
+# /////////////////////////////////////////////////////////////////////////////////////////////////
+
+name: "pi_tcn_full_dataset"
+
+defaults:
+  - quadcopter_general
+  - _self_
+
+dataset_name: pi_tcn
+data_path: data/external_data/long_horizon/data/pi_tcn
+
+obs_are_dt_derivatives: true
+obs_time_is_delta_time: true
+
+data:
+  label: "Pi-TCN (full dataset)"
+  linear_velocity_frame: world
+  angular_velocity_frame: body
+  trajectories:
+    - trajectory_name: train/8_4_5
+    - trajectory_name: train/8_5
+    - trajectory_name: train/8_6
+    - trajectory_name: train/8_7
+    - trajectory_name: train/8_8
+    - trajectory_name: train/8_10
+    - trajectory_name: train/8z_5
+    - trajectory_name: train/8z_6
+    - trajectory_name: train/8z_7
+    - trajectory_name: train/8z_8
+    - trajectory_name: train/8z_10
+    - trajectory_name: train/circle_2
+    - trajectory_name: train/circle_2_5
+    - trajectory_name: train/circle_3
+    - trajectory_name: train/circle_4
+    - trajectory_name: train/circle_5
+    - trajectory_name: train/circle_10
+    - trajectory_name: train/circlez_2_5
+    - trajectory_name: train/circlez_3
+    - trajectory_name: train/circlez_4
+    - trajectory_name: train/circlez_5
+    - trajectory_name: train/circlez_10
+    - trajectory_name: train/gt_8_6
+    - trajectory_name: train/gt_8_8
+    - trajectory_name: train/gt_8_10
+    - trajectory_name: train/gt_goto
+    - trajectory_name: train/gt_v_5
+    - trajectory_name: train/line8z_4
+    - trajectory_name: train/line8z_5
+    - trajectory_name: train/line8z_6
+    - trajectory_name: train/line8z_7
+    - trajectory_name: train/line8z_8
+    - trajectory_name: train/line8z_10
+    - trajectory_name: train/line_3
+    - trajectory_name: train/line_4
+    - trajectory_name: train/line_5
+    - trajectory_name: train/line_10
+    - trajectory_name: train/linez_3
+    - trajectory_name: train/linez_4
+    - trajectory_name: train/linez_5
+    - trajectory_name: train/linez_10
+    - trajectory_name: train/oval_3
+    - trajectory_name: train/oval_4
+    - trajectory_name: train/oval_5
+    - trajectory_name: train/oval_10
+    - trajectory_name: train/ovalz_3
+    - trajectory_name: train/ovalz_4
+    - trajectory_name: train/ovalz_5
+    - trajectory_name: train/ovalz_10
+    - trajectory_name: train/v_6
+    - trajectory_name: train/v_7
+    - trajectory_name: train/v_8
+    - trajectory_name: train/v_10
+    - trajectory_name: train/vT_5
+    # .... From validation directory ..................................
+    - trajectory_name: valid/vT_6
+    - trajectory_name: valid/vT_7
+    - trajectory_name: valid/vT_8
+    - trajectory_name: valid/vT_10
+    - trajectory_name: valid/vz_6
+    - trajectory_name: valid/vz_7
+    - trajectory_name: valid/vz_8
+    - trajectory_name: valid/vz_10
+    - trajectory_name: valid/w_11
+    - trajectory_name: valid/w_12
+    - trajectory_name: valid/w_14
+    - trajectory_name: valid/wz_11
+    - trajectory_name: valid/wz_12
+    - trajectory_name: valid/wz_14
+
+  test_InD_trajectory:
+    # test_InD_trajectory length:
+    #    0: 6454
+    #    1: 2263
+    #    2: 6981
+    #    3: 2830
+    #    4: 5173
+    #    5: 3976
+    #    6: 6333
+    #    7: 3381
+    #
+    - trajectory_name: test_trajectories/ellipse_1
+      category: L
+    - trajectory_name: test_trajectories/ellipse_2
+      category: S
+    - trajectory_name: test_trajectories/extended_lemniscate
+      category: L
+    - trajectory_name: test_trajectories/lemniscate
+      category: S
+    - trajectory_name: test_trajectories/parabola
+      category: M
+    - trajectory_name: test_trajectories/transposed_parabola
+      category: M
+    - trajectory_name: test_trajectories/warped_ellipse_1
+      category: L
+    - trajectory_name: test_trajectories/warped_ellipse_2
+      category: S
+
+  test_OOD_trajectory: null
+
+# global_interval_idx: [0, 10001]
+time_space:
+  bound: ???
+  granularity: ???
+# explorable_space: [[0, 8001]] # Not used in robotic env for now

@@ -1,0 +1,30 @@
+# @package _global_
+
+#
+# Base configuration for hyperparameter optimization
+#
+
+defaults:
+  - override hydra/launcher: joblib
+  - override /simulation_mode: single_agent_flatten_headless # alt: single_agent_flatten_human
+  - _self_
+
+
+# ....Multirun sweep...............................
+hydra:
+  mode: MULTIRUN
+
+  # sweeper:
+  #   params:
+  #     seed: 58341, 12907, 76458, 41826, 93750, 20619, 85532, 49217, 67104, 34895
+
+  # ── Joblib launcher ──────────────────────────────────────────────
+  # Drives the per-trial process pool.
+  # `loky` (process-based) is required for safe CUDA usage; never use `threading` after CUDA init.
+  launcher:
+    # Number of concurrent Joblib trials (joblib workers sharing one GPU on
+    # HPC). On Valeria the SLURM HPO template exports HPO_N_JOBS and passes
+    # `hydra.launcher.n_jobs=${HPO_N_JOBS}` on the CLI.
+    n_jobs: ${oc.env:HPO_N_JOBS,1}
+    backend: loky
+    prefer: processes

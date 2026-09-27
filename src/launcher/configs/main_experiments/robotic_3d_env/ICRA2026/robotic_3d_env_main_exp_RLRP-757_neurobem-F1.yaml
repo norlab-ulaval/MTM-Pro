@@ -1,0 +1,228 @@
+#
+# Hydra launch command:
+#   $ python3 launcher/robotic_3d_env_main.py --config-name=robotic_3d_env_main_exp_RLRP-757_neurobem-F1 --config-dir=launcher/configs/main_experiments/robotic_3d_env/ICRA2026
+#
+
+defaults:
+  - /global_config
+  # ....pipeline.....................................
+  - /pipeline: robotic_3d_env_full_pipeline
+  # ....simulation mode..............................
+  - /simulation_mode: single_agent_flatten_human # alt: single_agent_flatten_headless
+  # ....algorithm....................................
+  - /algorithm/experience_replay@UDER: single_global_loop # <--
+  # - /algorithm/experience_replay@UDER: PBER_lr_warmup_disabled
+  # - /algorithm/experience_replay@UDER: PBER
+  # - /algorithm/experience_replay@UDER: PBUDER
+  # ....Environment and Data.........................
+  # - /simulator@environment: neurobem_quarter_dataset
+  - /simulator@environment: neurobem_full_dataset # <-- ~450000
+  - _self_
+
+# ====Experiment===================================
+algorithm:
+  name: 'ICRA2026'
+
+experiment_super: "RLRP-757-Neurobem-F1"  # Set to 'default' otherwise
+
+# comment: "" # Mute when not used
+
+# pipeline:
+#   tensorboard:
+#     batch_callback_execute_every_n: 200 # 1/4 of full neurobem Option: <int>, null -> disabled batch callback <--
+#     record_trajectory_pred_every_n_train_epoch: null # <--
+#     generate_model_gradient_norm: true
+
+
+deploy:
+  val_rollout:
+    # Rollout performed from validation trajectories
+    replay_buffer_ratio: 0.02
+    trajectory_length_ratio: 0.5
+  target_experiment:
+    tutor_and_release: true
+    ground_truth_feed_warmup_steps: 200 # <--
+    compounded_predictions_score: true # Only affect tensorboard callback + ERLL algo deploy stage
+  model_runtime:
+    next_state_deterministic_selection: true # ⚠️
+    next_state_sampling_size: 1 # if next_state is probabilistic
+
+  trajectory_computation:
+
+    integration_scheme: forward_euler # Options: trapezoidal, forward_euler (default)
+    # integration_scheme: trapezoidal
+
+    # src_timestamps: true # Use src_timestamps (float64) instead of recomputed timestamps (int64)
+
+    # (attitude_propagation) False -> don't use angular vel. True -> blend angular vel & attitude.
+    attitude_propagation: true # <--
+    quaternion_ang_vel_blend: 0.0 # Use angular velocity and first quaternion only
+    # quaternion_ang_vel_blend: 0.5
+    # quaternion_ang_vel_blend: 1.0 # Only use quaternion (no angular velocity)
+
+  # RLRP-773: opt-in per-epoch-checkpoint test-time rollouts (requires
+  # `training_common.force_checkpoint_interval` set on the training run that produced the
+  # `epoch_checkpoints/` tree). Default OFF => legacy single deploy, zero extra cost.
+  epoch_checkpoint_rollouts:
+    enable: true      # Options: bool. Run test-time rollouts for each epoch checkpoint  # <--
+    epoch_stride: null # Options: int >= 1 or null => every discovered checkpoint
+    epochs: null       # Options: list[int] or null => no explicit subset (last epoch always kept)
+
+
+# ====Environment and Data=========================
+
+source_replay_buffer:
+  source_size: all # Options: int or all i.e., all samples from offline source
+  val_ratio: 0.1
+  original_dataset_size: ???
+
+environment:
+  data:
+    force_dataset_fps_rescaling: false # <-- ★
+    subscaling_kind: decimate # <--
+
+# ====Algorithm====================================
+# Note: use "UDER" key to simplify experiment even if using "PBER" as algo ★
+UDER: # Overrides
+  # ~38000/150*80 = 20266 steps
+  # ~38000/150*200 = 50666 steps
+  # ~38000/150*120 = 30400 steps
+  # ~38000/300*200 = 25000 steps
+  # ~38000/500*200 = 15200 steps
+  # ~38000/500*300 = 22800 steps
+  # ~12000/160*200 = 15000 steps
+  # ~450000/512*400 = ~360,000 steps
+  batch_size:
+    gamma: 1.085 # For 500->1000 in 10 epochs
+    init_value: 512 # # --> ~38000/300*200 = 25000 steps <--
+    limit: 512
+  # uder_num_epochs: 6
+  # num_epochs_train_model: 600   # NOTE: scheduler.total_epochs below is in these global epochs
+  # final_max_num_epochs_train_model: 200
+  # uder_lr_schedule:
+  #   # Note: Closer to 1.0 -> higher uder peak
+  #   exp_decreassing: 0.5
+  # uder_num_epochs: 2
+  # num_epochs_train_model: 200   # NOTE: scheduler.total_epochs below is in these global epochs
+  # final_max_num_epochs_train_model: 100
+  # uder_lr_schedule:
+  #   # Note: Closer to 1.0 -> higher uder peak
+  #   exp_decreassing: 0.35
+  final_max_num_epochs_train_model: 400 # <--
+
+# ====Training=====================================
+training_common:
+  # RLRP-773: checkpoint knobs aggregated under the `checkpoint` group.
+  checkpoint:
+    performance_measure: val_loss # Options: val_loss, testtime_rollout_mae, testtime_rollout_l2norm ⚠️
+    # epoch-interval persistent checkpointing cadence (global completed inner epochs).
+    # Options: int >= 1 or null => OFF/legacy. When set, every ERLL pass epoch budget MUST be an
+    # explicit int (a null/patience-driven budget raises) and early-stopping is disabled.
+    force_interval: 50 # <--
+    include_optimizer: null # <-- RLRP-773: also persist the optimizer state_dict
+  optimizer:
+    use_adam: false
+    # A8 (RLRP-783 follow-up): source the fused (CUDA) Adam opt-in from the selected pipeline
+    # group (`pipeline.optimizer.adam_fused`); the multirun/HPO/deploy/pipeline configs set it
+    # true. Absent/other pipelines => false (legacy). Threaded into the AdamW branch by
+    # `change_optimizer` (`perf_RLRP-783_mtm_pro_models_code_optimization_plan_20260827.md`).
+    adam_fused: ${oc.select:pipeline.optimizer.adam_fused,false}
+    AdamW: # ★
+      # Note: AdamW paired recommended default: lr=5e-4, wd ∈ {5e-2, 1e-2, 1e-3}
+      amsgrad: false # default
+  trainer_lr_schedule:
+    warmup: null
+    # cosine_annealing_lr:
+    #   T_max: null # null -> T_max will be set to "num_epochs_train_model"
+    #   # eta_min: 0 # Default: 0
+    cosine_annealing_lr: null
+    exponential_lr:
+      # Note: Closer to 1.0 -> slower decreasse, ~0.95 is parity with uder lr scheduler
+      gamma: 0.96 # HPO(PI-TCN) Aug 29 ★★★
+      # RLRP-770 (option 3): opt-in auto-`gamma`. When `end_fraction` (0, 1) is set, `gamma` is
+      # IGNORED and derived per UDER pass as `end_fraction ** (1/(pass_num_epochs-1))` so the LR
+      # always lands on `end_fraction` of the pass restart height (removes the fixed-`gamma`
+      # frozen tail on long passes). Under Law-U the pass budget is auto-sized (RLRP-727 B2).
+      # end_fraction: 0.05
+  model_lr: 8.8e-4 # HPO(PI-TCN) Aug 29 ★★★
+  # AdamW paired recommended default: lr=5e-4, wd ∈ {5e-2, 1e-2, 1e-3}
+  model_wd: 3.3e-2 # HPO(PI-TCN) Aug 29 ★★★
+  patience: 50 # Early stopping Options: int or null
+  improvement_threshold: 1.0e-08 # Affect model saving & early stopping (Default 0.01)
+
+ss_training: ${training_common}
+ms_training: ${training_common}
+
+
+# ====Multi-Step model=============================
+one_dim_transition_model:
+  _target_: tools.mbrl_lib_tools.models.one_dim_tr_model_v2.OneDTransitionRewardModelV2
+  normalize: true
+  # Note: normalizer_type options: standard, standard_symmetric, winsorized, quantile
+  normalizer_type: standard_symmetric
+  normalize_double_precision: false  # <-- bool | null->Auto-detected from model precision
+  allow_contract_drop: false # <--
+  num_elites: null
+
+feature_loss_weights:
+  # ....The criterion..............................................................
+  # A named criterion, a scalar, or an explicit per-dim list.
+  #   predictability   -> w ~ (sigma_delta / sigma_noise_floor)**2. RECOMMENDED:
+  #                       de-emphasises NOMINAL vibration while keeping the rare
+  #                       adverse excursions fully salient.
+  #   state_equivalent -> w ~ sigma_state**2. The raw-space CONTROL: it makes a
+  #                       symmetric target reproduce the per-feature budget the
+  #                       raw-target `standard` path implicitly uses.
+  #   raw_equivalent   -> w ~ sigma_delta**2, i.e. innovation energy. NOTE
+  #                       (RLRP-761 S8.4f) this is NOT the raw-space control it was
+  #                       once documented to be -- that needs sigma_state**2.
+  #   uniform          -> the scalar 1.0 (explicit opt-out, weighting path OFF).
+  obs_feature_weights: uniform
+  # An UNSET act block inherits the obs criterion (S7.3): the two are concatenated
+  # and normalized jointly, so leaving it at 1.0 is NOT neutral. `uniform` opts out.
+  act_feature_weights: uniform
+    # ....The semantic...............................................................
+  # `multiplicative` -> `w_d * NLL_d`, which actually re-allocates the gradient.
+  # `tempered`       -> `NLL_d + log w_d`, an ADDITIVE CONSTANT on an NLL, hence
+  #                     GRADIENT-INERT (blocker B1). Pairing it with a named
+  #                     criterion is REFUSED, since it yields a null result that
+  #                     looks like a measurement.
+  feature_weight_mode: multiplicative
+  # ....The three bounds -- three DIFFERENT quantities.............................
+  # Lower bound on a resolved weight, in units of the MEAN weight. The named
+  # criteria are quadratic in a measured scale, so without a floor a low-innovation
+  # channel collapses by ~2 orders of magnitude. On the reference UGV run this
+  # left `angular_vels.x/y` at w=0.04/0.05 -- i.e. the adverse-event channels
+  # (traction loss, weight transfer) effectively unsupervised. `0.0` disables it.
+  feature_weight_min: 0.1 # <--
+  # Target weight of the EXOGENOUS `dt` (delta-timestamp) dim. `dt` is read from
+  # the clock at deploy time and the deploy path emits observations only, so
+  # forecasting it buys nothing; standardizing it (S1.5) correctly fixed the
+  # model's INPUT blindness but also promoted pure clock jitter into the target,
+  # where it took 52.4 % of the budget. `1.0` restores the S1.5-era behaviour.
+  # dt_target_weight: 1.0 # <--
+  # Maximum share of the composed target budget a single feature may hold. This
+  # is the bound that MATTERS, and the three bounds are NOT interchangeable:
+  # `feature_weight_min` bounds the WEIGHT, `max_weight_ratio` the weight RATIO,
+  # and only this one bounds the realized BUDGET -- which is quadratic in the
+  # normalized one-step innovation, hence a 94x weight spread produced a ~200x
+  # budget spread, and even after `feature_weight_min` one feature still held
+  # 59 %. Enforced by water-filling across the obs AND act blocks jointly.
+  # `1.0` disables it.
+  max_target_share: 0.15 # <--
+  # Upper bound on the RATIO of the resolved weights (`max_d w_d / min_d w_d`),
+  # applied as a symmetric log-space squash BEFORE the model's own sum
+  # normalization (only ratios survive it, so an absolute clip is meaningless).
+  # `null` -> framework default.
+  max_weight_ratio: null
+
+ms_model: # <- OVERRIDES
+  model_use_double_precision: false # <-- # ⚠️
+  ensemble_size: 1 # ⚠️ For first paper
+
+  # ....Auto set......................................
+  singlestep_obs_len: ${environment.obs_shape[0]} # quickhack
+  singlestep_act_len: ${environment.act_shape[0]} # quickhack
+  in_size: ???
+  out_size: ???
+  device: ${device}

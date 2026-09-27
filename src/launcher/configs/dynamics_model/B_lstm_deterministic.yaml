@@ -1,0 +1,131 @@
+
+# ====================================================
+#         Model type: Auto-regressive baseline
+#
+#                        ★
+#             Configuration as in paper
+#         Learning Long-Horizon Predictions
+#              for Quadrotor Dynamics
+#
+# ====================================================
+
+_target_: tools.multistep_tools.models.MS2SSProbabilisticLSTM
+description: "LSTM Deterministic (Auto-regressive MS unroll model)"
+
+deterministic: true # ★★★
+learn_logvar_bounds: false # ★★★
+
+ensemble_size: 1 # model-ensemble isn't supported yet
+propagation_method: null
+# Option: expectation, fixed_model, random_model, null
+
+mae_loss: true
+
+
+# ....Multistep....................................
+ar_enabled: true # ★★★
+receive_sequence_batch: false # ★★★
+ar_train_horizon_unroll: true # ★★★
+
+ar_temporal_weights: 1.0
+ar_temporal_weights_start: 1.0
+ar_temporal_weights_warmup: 0
+ar_temporal_weights_ramp_stop: 0 # 0->Disabled
+ar_unrol_len_probablity_decay_start: 0
+ar_unrol_len_probablity_decay_stop: 0 # 0->Disabled
+ar_unrol_len_decay_method: beta # Options: beta, exponential, linear
+ar_unrol_len_start_horizon_len: 1 # Short unroll len the curriculum grows from (>=1, <=horizon_len)
+# RLRP-767: how the LSTM (h, c) state is threaded through the AR horizon unroll.
+#   single_frame_carry   -> ★★ best practice: warm (h, c) on the full history
+#                           window (first step) then carry it and feed ONLY the
+#                           newest frame. Each frame ingested once => NO history
+#                           double-count. Requires decoder_receive_ms_hidden_size=false.
+#   sliding_window_reset -> reset (h, c) each step, re-feed the whole sliding
+#                           window (pure many-to-one). Double-count free but re-encodes
+#                           the full window every step; works with any decoder.
+#   legacy               -> ⚠️ carry (h, c) AND re-feed the whole window each step:
+#                           the history_len-1 overlapping frames are re-ingested on top
+#                           of the carried state => history double-counted. Kept only to
+#                           reproduce pre-RLRP-767 runs bit-for-bit.
+ar_recurrent_memory_mode: single_frame_carry # Options: single_frame_carry, sliding_window_reset, legacy
+teacher_forcing_decay_start: 0 # warmup phase
+teacher_forcing_decay_stop: 0 # Options: abs stop step (>decay_start), 0->Disabled, -1->always_on
+teacher_forcing_method: linear # Options: linear, exponential, always_on, always_off
+
+history_len: 20
+horizon_len: 10 # Imply AR unroll len U=20 and forecast horizon F=1
+
+# ... Encoder ..........
+num_layers: 3
+hid_size: 308
+
+# ... Decoder ..........
+decoder_receive_ms_hidden_size: false
+decoder_num_layers: 1 # Options: int > 0, -1 match num_layers
+decoder_ss_head_num_layers: 2
+# decoder_hid_size: -2 # Options: int > 0, -1 match out_size or -2 match hid_size
+decoder_hid_size: 512
+
+
+activation_fn_cfg:
+  _target_: torch.nn.GELU
+
+# ====General======================================
+dropout: 0.0
+model_use_double_precision: false # ⚠️
+
+singlestep_obs_len: ??? # quickhack
+singlestep_act_len: ??? # quickhack
+# RLRP-736: per-feature geometry loss weight (0.0 -> OFF / bit-exact legacy loss).
+# Set > 0 to enable the orientation-aware geodesic term for envs whose feature
+# handler defines a quaternion group (robotic-3D UGV/UAV); no effect for the
+# neutral math-env handler.
+feature_geometry:
+  loss_weight: 0.0
+  loss_objective: null # Options: geodesic (default), chordal, null (disable)
+  # RLRP-751: false (default) -> STATIC weighting (scaled by loss_weight, legacy
+  # behaviour); true -> route the SS/MS/CP feature-geometry channels through the
+  # composite uncertainty auto-weighting (Kendall 2018), with loss_weight as the
+  # pre-multiplier. ONE key controls all three channels; gracefully degrades to
+  # STATIC on families without an (enabled) composite auto-weighting module.
+  auto_weighting: false
+
+
+internal_orientation:
+  representation: quaternion # Options (live): quaternion (default), quaternion_legacy. nine_d_svd, sixd are ABANDONED legacy prototypes (kept for reproducibility of archived experiments only)
+  tangent_nll_right_jacobian: false # false -> 'plain' tangent density
+  manifold_aware_nll: null # RLRP-744 item A: null -> auto (matrix reps ON, quaternion OFF); true -> force ON (quaternion manifold upgrade); false -> force OFF (matrix-rep ablation)
+  # RLRP-744 item C: the plain `quaternion` rep ALWAYS decodes to a unit quaternion
+  # IN-GRAPH by construction (no lever; independent of manifold_aware_nll);
+  # quaternion_legacy keeps the raw un-normalized legacy output.
+  # NOTE: enforce_continuity acts at data ingestion on the raw
+  # quaternion. It affects learning ONLY for the quaternion/quaternion_legacy
+  # reps (raw 4-D input slot); it is mathematically bit-identical (inert, no
+  # conflict) for sixd/nine_d_svd, which encode via SO(3) matrices (R(q)=R(-q)).
+  # RLRP-744 item E: this key ALSO gates the MODEL-SIDE reference-relative attitude
+  # alignment (align_quaternion_slots_to_reference at AR splice/deploy + the DH residual)
+  # via _quaternion_ar_continuity_active, so it governs continuity end-to-end (all reps
+  # except quaternion_legacy). It does NOT affect the in-graph unit decode (item C).
+  enforce_continuity: false # true (default) -> enforce <q_t,q_{t-1}> >= 0 temporal sign continuity; false -> disable
+
+# RLRP-736 §S2.2-B: internal (model-only) rotation representation for the 4-D
+# attitude quaternion slot. External model I/O stays a 4-D quaternion (bit-exact
+# / real-robot-pipeline compatible); when enabled the trunk regresses a
+# continuous over-parameterized rotation and the output head re-emits a unit
+# quaternion BY CONSTRUCTION (Geist et al. 2024, "Hitchhiker's Guide to SO(3)").
+#   "quaternion" -> OFF / passthrough / bit-exact legacy (default)
+#   "nine_d_svd" -> R^9 + SVD projection (Levinson 2020 / Chen et al. 2023);
+#                   ABANDONED legacy prototype, kept only for reproducibility of
+#                   archived experiments (NOT a recommended live option)
+#   "sixd"       -> R^6 + Gram-Schmidt (Zhou et al. 2019);
+#                   ABANDONED legacy prototype, kept only for reproducibility
+# NOTE: only the DETERMINISTIC mean path is wired; the probabilistic tangent-NLL
+# head is a compute-gated follow-up and fails loud if enabled. "so3_relative" is
+# DEFERRED (poor fit for large per-step rotations under adverse conditions).
+# Single-step BASE index of the 4-D attitude quaternion slot in the robotic-3D
+# obs layout (linvel[0:3] + attitude[3:7] + angvel[7:10]); expanded internally
+# over the composed window. Leave null while internal_orientation_rep==quaternion.
+
+device: ${device}
+in_size: ???
+out_size: ???

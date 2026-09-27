@@ -1,0 +1,896 @@
+#
+# Hydra launch command with experiment cfg override:
+#   $ python3 launcher/multirun_testtime_rollout_plot.py multirun_testtime_rollout_plot@_global_=icra2026_ugv_RLRP-757-F2c-obsD6-online
+#
+
+# ====Experiment===================================
+algorithm:
+  name: 'ICRA2026'
+
+overrides:
+  experiment: "RLRP-757-F2c-obsD6-online-ugv-multirun-test-time-plot"
+
+latex_includegraphics:
+  save_path: artifact/ICRA2026/latex_includegraphics/${overrides.experiment}
+  file_name: rlrp757_husky_F2c-obsD6-online_20to10
+
+env_name: "Husky gravel and grass online ICP (full dataset)"
+
+general_coment: "Full scale experiment on Husky gravel and grass online ICP dataset'
+"
+
+simulator_config: husky_gravel_and_grass_full_dataset_vel_only_online # <--
+
+# render_type: standalone # <--
+# render_type: latex_includegraphics
+
+
+show:
+  # When true, render a secondary x-axis on top of the General /
+  # Final-General / per-category / per-trajectory plots displaying
+  # timestamps in the unit declared by the active simulator config
+  # (``environment.data.original_timestamps_unit``). The primary x-axis
+  # remains in timesteps. Conversion uses
+  # ``environment.data.target_frame_rate`` (Hz) to map step -> seconds,
+  # then to the target unit. Default: false.
+  show_timestamp_xaxis: true
+
+  target_is_ood: false
+  # target_is_ood: true
+  average_across_trajectories: false # (false) show inter-trial variation, (true) shows inter-trajectory-pattern variation (caution mean of mean).
+  summary_table: false
+
+  # When true, render the y-axis (metric scale) in log10 scale on the General
+  # plot, per-category plots, and per-trajectory plots. Default: false.
+  y_axis_in_logscale: true
+  # y_axis_in_logscale: false
+  y_axis_in_logscale_min_value: 1e-4
+  # y_axis_in_logscale_min_value: 5e-3
+  # x_axis_in_logscale: true
+  x_axis_in_logscale: false
+
+  # breakdown: [null|'category'|'trajectory']
+  #   null        -> no breakdown plots
+  #   'category'  -> per-length-category plots (S/M/L) — previous default
+  #   'trajectory'-> per-`trajectory_name` plots (one plot per GT trajectory)
+  # breakdown: category
+  # breakdown: trajectory
+  breakdown: null
+
+  # general_length: [null|'min'|'max'|<int>]
+  #   null   -> skip general plot entirely
+  #   'min'  -> shortest trajectory length (selects all)
+  #   'max'  -> longest trajectory length (typically 1 trajectory)
+  #   <int>  -> select trajectories with GT length >= <int>, xlim.right=<int>
+  general_length: null
+  # general_length: min
+  # general_length: 1000
+  # general_length: 2000
+  # general_length: 3600
+  # general_length: 8000
+
+  # ... Ground-truth-feed warm-up interval treatment (RLRP-733) ...................
+  # During the warm-up interval (timesteps 0 .. ground_truth_feed_warmup_steps)
+  # the model is fed ground truth, so its error is artificially near-zero. On a
+  # log-scale time axis (`x_axis_in_logscale: true`) these early timesteps get
+  # magnified, visually flattening the meaningful compounded-prediction region.
+  # This option controls how that interval is treated on EVERY time-axis plot
+  # (General, Final-General, per-category, per-trajectory, and the drift-rate
+  # plot).
+  #
+  # ground_truth_feed_warmup.mode: [null|'discard'|'reference_line']
+  #   null             -> no treatment (current behavior; omit the block for the same)
+  #   'discard'        -> clamp the left x-limit to the warm-up boundary
+  #                       (the warm-up region is not shown)
+  #   'reference_line' -> keep all data but draw a dashed vertical marker at
+  #                       the warm-up boundary (log-scale faithful; the marker
+  #                       is drawn in data coordinates)
+  #
+  # The warm-up step count is ALWAYS auto-derived from each recorded rollout's
+  # saved Hydra config (deploy.target_experiment.ground_truth_feed_warmup_steps)
+  # — there is no manual override. If the contributing experiments were recorded
+  # with different warm-up lengths the pipeline fails fast with an informative
+  # error (they cannot be meaningfully compared on a shared axis). A value of 0
+  # is a valid warm-up length ("no warm-up") and is honored, not skipped.
+  ground_truth_feed_warmup: # <--
+    # mode: null
+    # mode: reference_line
+    mode: discard
+
+  # ... Final general plot (all-trajectory aggregation) ............................
+  # Renders an additional plot aggregating EVERY trajectory regardless of length,
+  # with a light std band (mean ± 1·std) and a dark SEM band (mean ± 2·SEM).
+  # The dark SEM band naturally widens to the right where fewer trajectories
+  # contribute. Note: `variation_type` is fixed to `group_mae_std` for this plot.
+  generate_final_general_plot:
+    render: false
+    skip_nan_contaminated_mae: true
+    skip_nan_contaminated_std_uncertainty: true
+
+  # ... C-MAE drift-rate plot .....................................................
+  # Renders one curve per group of the cumulative MAE divided by
+  # (timestep · cumulative GT path length), paired per-rollout with its
+  # matching GT trajectory (by `_trajectory_name`).
+  #   length_cutoff: [null|<int>]  (minimum-trajectory-length selector, RLRP-734)
+  #     null   -> select ALL trajectories; horizon = shortest trajectory length
+  #     <int>  -> select trajectories with (trajectory length >= <int>);
+  #               horizon = <int> (each retained rollout trimmed to length_cutoff)
+  generate_drift_rate_plot:
+    render: true
+    # render: false
+
+    # length_cutoff: null # Options: null->trajectories smallest lentgh, int->select all trajectories of length >= to length_cutoff
+    length_cutoff: null # <-- ICRA2026
+    # length_cutoff: 152 # S
+    # length_cutoff: 230
+    # length_cutoff: 351
+    # length_cutoff: 336 # M
+    # length_cutoff: 380 # > M
+    # length_cutoff: 400 # 3x trj
+    # length_cutoff: 450 # 2x trj
+    # length_cutoff: 812 # L
+
+    # Group length
+    # S: 152
+    # M: 336
+    # L: 812
+
+    # `train_epochs` drives the iteration: null (deployed/final model, legacy),
+    # a single int, a list of int (a SERIES of training epochs -> one figure
+    # per epoch, each file prefixed with `<train_epoch>_epoch_`), or `all` to
+    # auto-discover and render every available `epoch_<E>` snapshot.
+    train_epochs: null
+    # train_epochs: all  # Auto-discover every available training epoch snapshot
+    # train_epochs: [100, 500, 1000, 2000]  # Series of training epochs (one figure each)
+    # Assemble the produced PNG series into a 1-fps slideshow video (`ffmpeg`).
+    generate_diaporama: false  # Options: true->build the .mp4 slideshow, false->skip
+    diaporama_fps: 1.0        # Frames per second (each image shown 1/fps seconds)
+    # top_ylim: 1e-1
+    # top_ylim: 1.5e+2 # For logscale OoD
+    # bottom_ylim: 5e-4 # For logscale
+    # top_ylim: 1.0e-0 # For logscale InD
+    # top_ylim: 2.5e-1 # For logscale InD
+
+    top_ylim: 1.0e-1 # For logscale InD
+    bottom_ylim: 1e-3 # For logscale InD GT warmup discarded <--
+
+    # top_ylim: 1.5e-1 # For logscale InD
+    # bottom_ylim: 5e-3 # For logscale InD GT warmup discarded <--
+
+    # bottom_ylim: 1e-3 # For logscale InD GT warmup discarded <--
+    # bottom_ylim: 1e-3 # For logscale InD GT warmup discarded <--
+    # bottom_ylim: 1.0e-4 # For logscale GT warmup discarded <--
+    # bottom_ylim: 5.0e-4 # For logscale GT warmup discarded <--
+
+    # ... Per-train-epoch C-MAE drift-rate plot (RLRP-773 W9) ....................
+    # Opt-in NEW companion plot: one point per discovered `epoch_<E>` training
+    # snapshot under `<experiment_base>/epoch_checkpoints_rollouts/` (X axis is
+    # the TRAINING EPOCH, Y axis is the same C-MAE drift-rate reduced to a
+    # per-epoch scalar). Default OFF (`render: false`) => the drift plot above
+    # runs UNCHANGED, and this is a strict no-op when no per-epoch rollout tree
+    # exists. Every sub-key below is optional; when omitted it inherits from the
+    # parent `generate_drift_rate_plot` block (`length_cutoff`, `drift_type`) or
+    # the global default (`y_axis_in_logscale`).
+    per_train_epoch:
+      render: false
+      # render: true
+      # drift_type: "timesteps"   # inherits parent when omitted; Options: "timesteps", "path_length"
+      # length_cutoff: 250        # inherits parent when omitted
+      # list of int (a SERIES of horizons -> one figure per horizon, each saved
+      # file prefixed with `<length_cutoff>_horizon_<plot_name>.png`), or an
+      # INTERVAL mapping `{start: <int>, stop: <int>, step: <int>}` which is
+      # expanded to one horizon per `step` over `[start, stop]` (`stop` is
+      # INCLUSIVE when it lands on a step boundary). `step` defaults to 1.
+      # length_cutoff: 5000       # inherits parent when omitted
+      # length_cutoff: 25  # Still in the warmup phase
+      # length_cutoff: 35  # Out of warmup phase for 10 step
+      # length_cutoff: 125  # Out of warmup phase for 100 step
+      # length_cutoff: [25, 50, 100, 200, 210, 250, 300, 400]  # Series of horizons (one figure each)
+      length_cutoff: {start: 50, stop: 812, step: 25}  # Interval -> [20, 40, 60, ...]
+      # Assemble the per-horizon PNG series into a 1-fps slideshow video
+      # (`ffmpeg` required); inherits the parent value when omitted.
+      generate_diaporama: false  # Options: true->build the .mp4 slideshow, false->skip
+      diaporama_fps: 4        # Frames per second (each image shown 1/fps seconds)
+      # y_axis_in_logscale: false # inherits the global default when omitted
+      top_ylim: 1.0e-0          # For logscale
+      bottom_ylim: 5.0e-3       # For logscale
+
+  generate_training_wall_clock_time_plot:
+    # render: true # <--
+    render: false
+    width_latex: single_column_width
+    height_latex: 1.3
+
+
+  generate_rollout_wall_clock_time_plot:
+    render: false
+
+
+  # .... Variation around the MAE ..........
+  # Option: group_mae_std, group_avg_uncertainty, group_avg_epi, group_avg_ale
+  variation_type: group_mae_std
+  # variation_type: group_avg_uncertainty
+  # variation_type: group_avg_ale
+  # variation_type: group_avg_epi
+
+  variation_scale: 1 # ★
+  # variation_scale: 2
+  # variation_scale: 10 # ★ to highlight ours
+
+
+  # ... Case 1: non-compounding.............
+  # cumulative_metric: true
+  # compounded_predictions_score: false
+  # top_ylim: 1500 # InD
+  # # top_ylim: 510000 # OoD
+  # # top_ylim: 0.15e+7 # OoD
+  # # top_ylim: null
+
+  # ... Case 2: compounding.................
+  cumulative_metric: true
+  # compounded_predictions_score: false # <--
+  compounded_predictions_score: true # <--
+  # top_ylim: null
+  # top_ylim: 1000
+  # top_ylim: 1e+4
+  # top_ylim: 0.25 # Avg drift, compouned pred, OoD
+  # top_ylim: 55000 # OoD
+  # top_ylim: 100000 # OoD
+  # top_ylim: 295000 # InD
+
+  # ... Case 3 .............................
+  # cumulative_metric: false
+  # compounded_predictions_score: true
+  # top_ylim: null
+
+  # ... Case 4 .............................
+  # cumulative_metric: false
+  # compounded_predictions_score: false
+  # top_ylim: null
+
+  # ... figure display .....................
+  grp_names:
+
+    # ....Baselines.........................
+    - "AR-MLP-Det"
+    - "AR-MLP-Prob"
+    - "AR-GRU"
+    - "AR-LSTM"
+    - "AR-TCN"
+    - "AR-TCN-bf16-CudaG"
+    # - "E2E-TCN"
+    # - "M3"
+    - "E2E-TCN-bf16-F50"
+    - "M3-bf16-F50"
+    # - "E2E-TCN-F20"
+    # - "M3-F20"
+    # - "AR-TCN-faster"
+
+    # ....Our.....................
+    - "(ours) Dist-MTM-Pro-MS+CP"
+    - "(ours) Dist-MTM-Pro-MS+CP-fast-CudaG"
+    # - "(ours) Dist-MTM-Pro-MS"
+    - "(ours) Dist-MTM-Pro-MS-fast-cudaG"
+    # - "(ours) Dist-MTM-Pro-MS+CP+soft-max-energy"
+
+
+
+groups:
+
+  # ====Multistep objective========================================================================
+
+  - grp_name: "AR-MLP-Det"
+    gpr_short_name: "AR-MLP-Det"
+    comment: "[20→1x10]"
+    # line_style: "dotted"
+    line_style: "dashed"
+    ttrpm_dir: TTRPM_Deterministic_MLP_Auto-regressive_MS_unroll_model_PR_rolloutFalse
+    experiments:
+      - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2c-obsD6/AR-MLP-DET/2026.09.09/105831566183
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+          - A_trj_len={HI:20,HO:10},trial_nb=3
+          - A_trj_len={HI:20,HO:10},trial_nb=4
+      - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2c-obsD6/AR-MLP-DET/2026.09.09/105831567850
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+          - A_trj_len={HI:20,HO:10},trial_nb=3
+          - A_trj_len={HI:20,HO:10},trial_nb=4
+
+  - grp_name: "AR-MLP-Prob"
+    gpr_short_name: "AR-MLP-Prob"
+    comment: "[20→1x10]"
+    # line_style: "dotted"
+    line_style: "dashed"
+    ttrpm_dir: TTRPM_Probabilisitic_MLP_Auto-regressive_MS_unroll_model_PR_rolloutFalse
+    experiments:
+      - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2c-obsD6/AR-MLP-PROB/2026.09.09/105831580767
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+          - A_trj_len={HI:20,HO:10},trial_nb=3
+          - A_trj_len={HI:20,HO:10},trial_nb=4
+      - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2c-obsD6/AR-MLP-PROB/2026.09.09/121308233716
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+          - A_trj_len={HI:20,HO:10},trial_nb=3
+          - A_trj_len={HI:20,HO:10},trial_nb=4
+
+  - grp_name: "AR-GRU"
+    gpr_short_name: "AR-GRU"
+    comment: "[20→1x10]"
+    # line_style: "dotted"
+    line_style: "dashed"
+    ttrpm_dir: TTRPM_GRU_Deterministic_Auto-regressive_MS_unroll_model_PR_rolloutFalse
+    experiments:
+      - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2c-obsD6/GRU/2026.09.09/105917939166
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+          - A_trj_len={HI:20,HO:10},trial_nb=3
+          - A_trj_len={HI:20,HO:10},trial_nb=4
+      - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2c-obsD6/GRU/2026.09.09/105919725202
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+          - A_trj_len={HI:20,HO:10},trial_nb=3
+          - A_trj_len={HI:20,HO:10},trial_nb=4
+
+  - grp_name: "AR-LSTM"
+    gpr_short_name: "AR-LSTM"
+    comment: "[20→1x10]"
+    #   line_style: "dotted"
+    line_style: "dashed"
+    ttrpm_dir: TTRPM_LSTM_Deterministic_Auto-regressive_MS_unroll_model_PR_rolloutFalse
+    experiments:
+      - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2c-obsD6/LSTM/2026.09.09/121308254808
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+          - A_trj_len={HI:20,HO:10},trial_nb=3
+          - A_trj_len={HI:20,HO:10},trial_nb=4
+      - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2c-obsD6/LSTM/2026.09.09/123410705886
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+          - A_trj_len={HI:20,HO:10},trial_nb=3
+          - A_trj_len={HI:20,HO:10},trial_nb=4
+
+  - grp_name: "AR-TCN"
+    gpr_short_name: "AR-TCN"
+    comment: "[20→1x10]"
+    # line_style: "dotted"
+    line_style: "dashed"
+    ttrpm_dir: TTRPM_TCN_Deterministic_Auto-regressive_MS_unroll_model_PR_rolloutFalse
+    experiments:
+      - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2c-obsD6/TCN/2026.09.09/130012697634
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+          - A_trj_len={HI:20,HO:10},trial_nb=3
+          - A_trj_len={HI:20,HO:10},trial_nb=4
+      - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2c-obsD6/TCN/2026.09.09/130033353296
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+          - A_trj_len={HI:20,HO:10},trial_nb=3
+          - A_trj_len={HI:20,HO:10},trial_nb=4
+
+  - grp_name: "AR-TCN-bf16-CudaG"
+    gpr_short_name: "AR-TCN-bf16-CudaG"
+    comment: "[20→1x10] mix-precision and cuda-graph enabled"
+    # line_style: "dotted"
+    line_style: "dashed"
+    ttrpm_dir: TTRPM_TCN_Deterministic_Auto-regressive_MS_unroll_model_PR_rolloutFalse
+    experiments:
+      - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2c-obsD6/TCN-bf16+cudagraph/2026.09.20/185720961744
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+          - A_trj_len={HI:20,HO:10},trial_nb=3
+          - A_trj_len={HI:20,HO:10},trial_nb=4
+      - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2c-obsD6/TCN-bf16+cudagraph/2026.09.20/185720962452
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+          - A_trj_len={HI:20,HO:10},trial_nb=3
+          - A_trj_len={HI:20,HO:10},trial_nb=4
+
+  # - grp_name: "AR-TCN-faster"
+  #   gpr_short_name: "AR-TCN-faster"
+  #   comment: "[20→1x10]"
+  #   # line_style: "dotted"
+  #   line_style: "dashed"
+  #   ttrpm_dir: TTRPM_TCN_Deterministic_FASTER_A3A4_bit-exact_A5_compile_ON_A9_bf16_autocast_ON_Auto-regressive_MS_unroll_model_PR_rolloutFalse
+  #   experiments:
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2b-obsD6/TCN-faster/2026.09.04/131151416011
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10},trial_nb=2
+  #         - A_trj_len={HI:20,HO:10},trial_nb=3
+  #         - A_trj_len={HI:20,HO:10},trial_nb=4
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2b-obsD6/TCN-faster/2026.09.04/131151486582
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10},trial_nb=2
+  #         - A_trj_len={HI:20,HO:10},trial_nb=3
+  #         - A_trj_len={HI:20,HO:10},trial_nb=4
+
+
+  # ======MS2MS baselines==========================================================================
+
+  - grp_name: "E2E-TCN"
+    gpr_short_name: "E2E-TCN"
+    comment: "[20→10x1]"
+    # line_style: "dotted"
+    line_style: "dashdot"
+    ttrpm_dir: TTRPM_End-to-End-TCN_one-shot_MS-MS_forecast_baseline_PR_rolloutFalse
+    experiments:
+      - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2c-obsD6/E2E-TCN/2026.09.11/214233608867
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+      - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2c-obsD6/E2E-TCN/2026.09.11/214258754238
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+      - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2c-obsD6/E2E-TCN/2026.09.11/214305556425
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+      - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2c-obsD6/E2E-TCN/2026.09.11/214532197106
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+
+  - grp_name: "E2E-TCN-F20"
+    gpr_short_name: "E2E-TCN-F20"
+    comment: "[20→20x1]"
+    # line_style: "dotted"
+    line_style: "dashdot"
+    ttrpm_dir: TTRPM_End-to-End-TCN_one-shot_MS-MS_forecast_baseline_PR_rolloutFalse
+    experiments:
+      - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2c-obsD6/E2E-TCN/2026.09.11/214227767948
+        multirun_paths:
+          - A_trj_len={HI:20,HO:20},trial_nb=1
+          - A_trj_len={HI:20,HO:20},trial_nb=2
+      - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2c-obsD6/E2E-TCN/2026.09.11/214244098227
+        multirun_paths:
+          - A_trj_len={HI:20,HO:20},trial_nb=1
+          - A_trj_len={HI:20,HO:20},trial_nb=2
+      - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2c-obsD6/E2E-TCN/2026.09.11/214939599947
+        multirun_paths:
+          - A_trj_len={HI:20,HO:20},trial_nb=1
+          - A_trj_len={HI:20,HO:20},trial_nb=2
+      - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2c-obsD6/E2E-TCN/2026.09.11/214949700196
+        multirun_paths:
+          - A_trj_len={HI:20,HO:20},trial_nb=1
+          - A_trj_len={HI:20,HO:20},trial_nb=2
+
+  - grp_name: "E2E-TCN-bf16-F50"
+    gpr_short_name: "E2E-TCN-bf16-F50"
+    comment: "[20→50x1] mix-precision enabled"
+    # line_style: "dotted"
+    line_style: "dashdot"
+    ttrpm_dir: TTRPM_End-to-End-TCN_one-shot_MS-MS_forecast_baseline_PR_rolloutFalse
+    experiments:
+      - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2c-obsD6/E2E-TCN-F50/2026.09.18/184318994549
+        multirun_paths:
+          - A_trj_len={HI:20,HO:50},pipeline.ms_hdf5_allow_generate=False,trial_nb=1
+          - A_trj_len={HI:20,HO:50},pipeline.ms_hdf5_allow_generate=False,trial_nb=2
+          - A_trj_len={HI:20,HO:50},pipeline.ms_hdf5_allow_generate=False,trial_nb=3
+          - A_trj_len={HI:20,HO:50},pipeline.ms_hdf5_allow_generate=False,trial_nb=4
+      - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2c-obsD6/E2E-TCN-F50/2026.09.18/184319004858
+        multirun_paths:
+          - A_trj_len={HI:20,HO:50},pipeline.ms_hdf5_allow_generate=False,trial_nb=1
+          - A_trj_len={HI:20,HO:50},pipeline.ms_hdf5_allow_generate=False,trial_nb=2
+          - A_trj_len={HI:20,HO:50},pipeline.ms_hdf5_allow_generate=False,trial_nb=3
+          - A_trj_len={HI:20,HO:50},pipeline.ms_hdf5_allow_generate=False,trial_nb=4
+
+  - grp_name: "M3"
+    gpr_short_name: "M3"
+    comment: "[20→10x1]"
+    # line_style: "dotted"
+    line_style: "dashdot"
+    ttrpm_dir: TTRPM_M3_multi-step_model_horizon-indexed_MS-MS_forecast_baseline_PR_rolloutFalse
+    experiments:
+      - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2c-obsD6/M3/2026.09.12/203016900448
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10},trial_nb=2
+          - A_trj_len={HI:20,HO:10},trial_nb=3
+          - A_trj_len={HI:20,HO:10},trial_nb=4
+          - A_trj_len={HI:20,HO:10},trial_nb=5
+          - A_trj_len={HI:20,HO:10},trial_nb=6
+          - A_trj_len={HI:20,HO:10},trial_nb=7
+          - A_trj_len={HI:20,HO:10},trial_nb=8
+
+  - grp_name: "M3-bf16-F50"
+    gpr_short_name: "M3-bf16-F50"
+    comment: "[1→50x1] mix-precision enabled"
+    # line_style: "dotted"
+    line_style: "dashdot"
+    ttrpm_dir: TTRPM_M3_multi-step_model_horizon-indexed_MS-MS_forecast_baseline_PR_rolloutFalse
+    experiments:
+      - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2c-obsD6/M3-F50/2026.09.18/184318798484
+        multirun_paths:
+          - A_trj_len={HI:1,HO:50},pipeline.ms_hdf5_allow_generate=False,trial_nb=1
+          - A_trj_len={HI:1,HO:50},pipeline.ms_hdf5_allow_generate=False,trial_nb=2
+          - A_trj_len={HI:1,HO:50},pipeline.ms_hdf5_allow_generate=False,trial_nb=3
+          - A_trj_len={HI:1,HO:50},pipeline.ms_hdf5_allow_generate=False,trial_nb=4
+      - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2c-obsD6/M3-F50/2026.09.18/184318801260
+        multirun_paths:
+          - A_trj_len={HI:1,HO:50},pipeline.ms_hdf5_allow_generate=False,trial_nb=1
+          - A_trj_len={HI:1,HO:50},pipeline.ms_hdf5_allow_generate=False,trial_nb=2
+          - A_trj_len={HI:1,HO:50},pipeline.ms_hdf5_allow_generate=False,trial_nb=3
+          - A_trj_len={HI:1,HO:50},pipeline.ms_hdf5_allow_generate=False,trial_nb=4
+
+  # - grp_name: "M3-F20"
+  #   gpr_short_name: "M3-F20"
+  #   comment: "[20→10x1]"
+  #   # line_style: "dotted"
+  #   line_style: "dashdot"
+  #   ttrpm_dir: TTRPM_M3_multi-step_model_horizon-indexed_MS-MS_forecast_baseline_PR_rolloutFalse
+  #   experiments:
+  #     - experiment_path: artifact/AAAI2026/RLRP-757-Husky-F1a/M3/2026.07.06/215404284434
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_m3_deterministic,trial_nb=1
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_m3_deterministic,trial_nb=2
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_m3_deterministic,trial_nb=3
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_m3_deterministic,trial_nb=4
+  #     - experiment_path: artifact/AAAI2026/RLRP-757-Husky-F1a/M3/2026.07.07/005342200771
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_m3_deterministic,trial_nb=1
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_m3_deterministic,trial_nb=2
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_m3_deterministic,trial_nb=3
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_m3_deterministic,trial_nb=4
+
+  # - grp_name: "TBM-Det F=5"
+  #   gpr_short_name: "TBM-Det F=5"
+  #   comment: "[20→10x1]"
+  #   # line_style: "dotted"
+  #   line_style: "dashdot"
+  #   ttrpm_dir: TTRPM_Trajectory-Based_Model_horizon-indexed_MS-MS_forecast_baseline_PR_rolloutFalse
+  #   experiments:
+  #     - experiment_path: artifact/ICRA2026/RLRP-736-UGV/TBM-DET/2026.07.21/005901296882
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=1
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=2
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=3
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=4
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=5
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=6
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=7
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=8
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=9
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=10
+  #
+  # - grp_name: "TBM-Det F=20"
+  #   gpr_short_name: "TBM-Det F=20"
+  #   comment: "[20→10x1]"
+  #   # line_style: "dotted"
+  #   line_style: "dashdot"
+  #   ttrpm_dir: TTRPM_Trajectory-Based_Model_horizon-indexed_MS-MS_forecast_baseline_PR_rolloutFalse
+  #   experiments:
+  #     - experiment_path: artifact/ICRA2026/RLRP-736-UGV/TBM-DET/2026.07.21/005901296882
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:20},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=1
+  #         - A_trj_len={HI:20,HO:20},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=2
+  #         - A_trj_len={HI:20,HO:20},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=3
+  #         - A_trj_len={HI:20,HO:20},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=4
+  #         - A_trj_len={HI:20,HO:20},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=5
+  #         - A_trj_len={HI:20,HO:20},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=6
+  #         - A_trj_len={HI:20,HO:20},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=7
+  #         - A_trj_len={HI:20,HO:20},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=8
+  #         - A_trj_len={HI:20,HO:20},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=9
+  #         - A_trj_len={HI:20,HO:20},dynamics_model@ms_model=B_ms2ms_tbm_deterministic,trial_nb=10
+
+  # - grp_name: "TBM-Prob"
+  #   gpr_short_name: "TBM-Prob"
+  #   comment: "[20→10x1]"
+  #   # line_style: "dotted"
+  #   line_style: "dashdot"
+  #   ttrpm_dir: TTRPM_Trajectory-Based_Model_horizon-indexed_MS-MS_forecast_baseline_PR_rolloutFalse
+  #   experiments:
+  #     - experiment_path: artifact/AAAI2026/RLRP-757-Husky-F1a/TBM-PROB/2026.07.07/021601942372
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_probabilistic,trial_nb=1
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_probabilistic,trial_nb=2
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_probabilistic,trial_nb=3
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_probabilistic,trial_nb=4
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_probabilistic,trial_nb=5
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_probabilistic,trial_nb=6
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_probabilistic,trial_nb=7
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_probabilistic,trial_nb=8
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_probabilistic,trial_nb=9
+  #         - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_probabilistic,trial_nb=10
+  #     # - experiment_path: artifact/AAAI2026/RLRP-757-Husky-F1a/E2E-TCN/2026.07.06/234941340139
+  #     #   multirun_paths:
+  #     #     - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_probabilistic,trial_nb=11
+  #     #     - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_probabilistic,trial_nb=12
+  #     #     - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_probabilistic,trial_nb=13
+  #     #     - A_trj_len={HI:20,HO:10},dynamics_model@ms_model=B_ms2ms_tbm_probabilistic,trial_nb=14
+
+
+    # ====Multistep prediction mixture model=========================================================
+
+
+  - grp_name: "(ours) Dist-MTM-Pro-MS+CP"
+    # gpr_short_name: "(ours) Dist-MTM-Pro-MS+CP"
+    gpr_short_name: "(ours) MTM-Pro"
+    comment: "[20→10→1x10]"
+    # line_style: "dotted"
+    line_style: "solid"
+    ttrpm_dir: TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Distributional_MTM-Pro_PR_rolloutFalse
+    experiments:
+      - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2c-obsD6/DMtm-Pro-MS+CP-F2c/2026.09.09/105913220034
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=3
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=4
+      - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2c-obsD6/DMtm-Pro-MS+CP-F2c/2026.09.09/105913220878
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=3
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=4
+
+  - grp_name: "(ours) Dist-MTM-Pro-MS+CP-fast-CudaG"
+    # gpr_short_name: "(ours) Dist-MTM-Pro-MS+CP"
+    gpr_short_name: "(ours) MTM-Pro"
+    comment: "[20→10→1x10]"
+    # line_style: "dotted"
+    line_style: "solid"
+    ttrpm_dir: TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Distributional_MTM-Pro_PR_rolloutFalse
+    experiments:
+      - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2c-obsD6/DMtm-Pro-MS+CP+cudagraph-F2c/2026.09.20/190030755351
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=3
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=4
+      - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2c-obsD6/DMtm-Pro-MS+CP+cudagraph-F2c/2026.09.20/190030782014
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=3
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=4
+
+  # - grp_name: "(ours) Dist-MTM-Pro-MS+CP+soft-max-energy"
+  #   gpr_short_name: "(ours) Dist-MTM-Pro-MS+CP+sme"
+  #   comment: "[20→10→1x10]"
+  #   # line_style: "dotted"
+  #   line_style: "solid"
+  #   ttrpm_dir: TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Distributional_MTM-Pro_PR_rolloutFalse
+  #   experiments:
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2b-obsD6/DMtm-Pro-MS+CP+soft-max-energy-F2a1/2026.09.04/131151347515
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=3
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=4
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2b-obsD6/DMtm-Pro-MS+CP+soft-max-energy-F2a1/2026.09.04/131151505350
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=3
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=4
+
+  # - grp_name: "(ours) Dist-MTM-Pro-MS+CP+I2Mix"
+  #   gpr_short_name: "(ours) Dist-MTM-Pro-MS+CP+I2Mix"
+  #   comment: "[20→10→1x10]"
+  #   # line_style: "dotted"
+  #   line_style: "solid"
+  #   ttrpm_dir: TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Distributional_MTM-Pro_PR_rolloutFalse
+  #   experiments:
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F1a/DMtm-Pro-MS+CP+I2Mix-F1/2026.08.27/063432293220
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=3
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=4
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F1a/DMtm-Pro-MS+CP+I2Mix-F1/2026.08.27/144715749623
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #         # - A_trj_len={HI:20,HO:10,U:10},trial_nb=3
+  #         # - A_trj_len={HI:20,HO:10,U:10},trial_nb=4
+
+  # - grp_name: "(ours) Dist-MTM-Pro-MS+SS"
+  #   gpr_short_name: "(ours) Dist-MTM-Pro-MS+SS"
+  #   comment: "[20→10→1x10]"
+  #   # line_style: "dotted"
+  #   line_style: "solid"
+  #   ttrpm_dir: TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Distributional_MTM-Pro_PR_rolloutFalse
+  #   experiments:
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F1a/DMtm-Pro-MS+SS/2026.08.07/091615146349
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=3
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=4
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=5
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=6
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=7
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=8
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=9
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=10
+  #
+  # - grp_name: "(ours) Dist-MTM-Pro-MS"
+  #   gpr_short_name: "(ours) MTM-Pro-MS"
+  #   comment: "[20→10→1x10]"
+  #   # line_style: "dotted"
+  #   line_style: "solid"
+  #   ttrpm_dir: TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Distributional_MTM-Pro_PR_rolloutFalse
+  #   experiments:
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2b-obsD6/DMtm-Pro-MS-F2a1/2026.09.04/075356018755
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=3
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=4
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2b-obsD6/DMtm-Pro-MS-F2a1/2026.09.04/075356110281
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=3
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=4
+
+  - grp_name: "(ours) Dist-MTM-Pro-MS-fast-cudaG"
+    gpr_short_name: "(ours) MTM-Pro-MS-fast-cg"
+    comment: "[20→10→1x10]"
+    # line_style: "dotted"
+    line_style: "solid"
+    ttrpm_dir: TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Distributional_MTM-Pro_PR_rolloutFalse
+    experiments:
+      - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F2c-obsD6/DMtm-Pro-MS+cudagraph-F2c/2026.09.20/190030755227
+        multirun_paths:
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=3
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=4
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=5
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=6
+          - A_trj_len={HI:20,HO:10,U:10},trial_nb=7
+          # - A_trj_len={HI:20,HO:10,U:10},trial_nb=8 # TODO: incomplete train run
+
+
+
+  # - grp_name: "(ours) Part-MTM-Pro-MS+CP+I2Mix"
+  #   gpr_short_name: "(ours) Part-MTM-Pro-MS+CP+I2Mix"
+  #   comment: "[20→10→1x10]"
+  #   # line_style: "dotted"
+  #   line_style: "solid"
+  #   ttrpm_dir: TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Particle_MTM-Pro_PR_rolloutFalse
+  #   experiments:
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F1a/PMtm-Pro-MS+CP+I2Mix-F1/2026.08.27/063551332333
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=3
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=4
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F1a/PMtm-Pro-MS+CP+I2Mix-F1/2026.08.27/173227903772
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #         # - A_trj_len={HI:20,HO:10,U:10},trial_nb=3
+  #         # - A_trj_len={HI:20,HO:10,U:10},trial_nb=4
+  #
+  # - grp_name: "(ours) Part-MTM-Pro-MS+CP"
+  #   gpr_short_name: "(ours) Part-MTM-Pro-MS+CP"
+  #   comment: "[20→10→1x10]"
+  #   # line_style: "dotted"
+  #   line_style: "solid"
+  #   ttrpm_dir: TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Particle_MTM-Pro_PR_rolloutFalse
+  #   experiments:
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F1a/PMtm-Pro-MS+CP-F1/2026.08.27/063553601889
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=3
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=4
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F1a/PMtm-Pro-MS+CP-F1/2026.08.27/145113366951
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=3
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=4
+
+  # - grp_name: "(ours) Part-MTM-Pro-MS+SS"
+  #   gpr_short_name: "(ours) Part-MTM-Pro-MS+SS"
+  #   comment: "[20→10→1x10]"
+  #   # line_style: "dotted"
+  #   line_style: "solid"
+  #   ttrpm_dir: TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Particle_MTM-Pro_PR_rolloutFalse
+  #   experiments:
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F1a/PMtm-Pro-MS+SS/2026.08.07/092554092820
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=3
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=4
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=5
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=6
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=7
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=8
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=9
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=10
+  #
+  # - grp_name: "(ours) Part-MTM-Pro-MS"
+  #   gpr_short_name: "(ours) Part-MTM-Pro-MS"
+  #   comment: "[20→10→1x10]"
+  #   # line_style: "dotted"
+  #   line_style: "solid"
+  #   ttrpm_dir: TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Particle_MTM-Pro_PR_rolloutFalse
+  #   experiments:
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F1a/PMtm-Pro-MS-F1/2026.08.27/081634756239
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=3
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=4
+
+
+  # - grp_name: "(ours) RePart-MTM-Pro-MS+CP+I2Mix"
+  #   gpr_short_name: "(ours) RePart-MTM-Pro-MS+CP+I2Mix"
+  #   comment: "[20→10→1x10]"
+  #   # line_style: "dotted"
+  #   line_style: "solid"
+  #   ttrpm_dir: TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Resampled_Particle_MTM-Pro_PR_rolloutFalse
+  #   experiments:
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Husky-E5g/RePMtm-Pro-MS+CP+I2Mix-F1/2026.08.23/151505577694
+  #       multirun_paths:
+  #         # - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         # - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+
+  # - grp_name: "(ours) RePart-MTM-Pro-MS+CP"
+  #   gpr_short_name: "(ours) RePart-MTM-Pro-MS+CP"
+  #   comment: "[20→10→1x10]"
+  #   # line_style: "dotted"
+  #   line_style: "solid"
+  #   ttrpm_dir: TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Resampled_Particle_MTM-Pro_PR_rolloutFalse
+  #   experiments:
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F1a/RePMtm-Pro-MS+CP-F1/2026.08.27/063545260462
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=3
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=4
+
+  # # - grp_name: "(ours) RePart-MTM-Pro-MS+SS"
+  # #   gpr_short_name: "(ours) RePart-MTM-Pro-MS+SS"
+  # #   comment: "[20→10→1x10]"
+  # #   # line_style: "dotted"
+  # #   line_style: "solid"
+  # #   ttrpm_dir: TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Resampled_Particle_MTM-Pro_PR_rolloutFalse
+  # #   experiments:
+  # #     - experiment_path: artifact/ICRA2026/RLRP-757-Husky-E5g/PMtm-Pro-MS+SS/2026.08.01/000846248069
+  # #       multirun_paths:
+  # #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  # #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  # #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=3
+  # #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=4
+  # #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=5
+  # #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=6
+  # #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=7
+  # #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=8
+  # #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=9
+  # #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=10
+  #
+  # - grp_name: "(ours) RePart-MTM-Pro-MS"
+  #   gpr_short_name: "(ours) RePart-MTM-Pro-MS"
+  #   comment: "[20→10→1x10]"
+  #   # line_style: "dotted"
+  #   line_style: "solid"
+  #   ttrpm_dir: TTRPM_Weighted_multistep_auto-regressive_temporal_mixture_PME_Resampled_Particle_MTM-Pro_PR_rolloutFalse
+  #   experiments:
+  #     - experiment_path: artifact/ICRA2026/RLRP-757-Husky-F1a/RePMtm-Pro-MS-F1/2026.08.27/080027517201
+  #       multirun_paths:
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=1
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=2
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=3
+  #         - A_trj_len={HI:20,HO:10,U:10},trial_nb=4

@@ -1,0 +1,34 @@
+# Procedure:
+#   1. Select specialized multirun cfg
+#   2. Execute: python3 launcher/math_env_main_multirun.py
+#
+# This cfg file is equivalent to running the following:
+#
+#   $ python3 launcher/math_env_main_multirun.py
+#       --config-name=math_env_main_DEV
+#       --config-dir=launcher/configs/main_experiments/math_env
+#       +multirun_overrides/math_env@_global_=math_env_main_multirun_ar_temporal_mixture_pme
+#       simulation_mode=single_agent_flatten_headless
+#
+# For debuging, add: +dev@_global_=math_env_debug
+
+defaults:
+  - /math_env_main_default
+  # - /main_experiments/math_env@_global_: math_env_small_and_fast_v1
+  # - /main_experiments/math_env@_global_: math_env_small3x_v1
+  # - /main_experiments/math_env@_global_: math_env_small3x_v1_baseline
+  # - /main_experiments/math_env@_global_: math_env_main_DEV
+    # ....multirun default.............................
+  - /multirun_base
+  # ....Multirun cfg........................................
+  - /multirun_overrides/math_env@_global_: math_env_main_multirun_default
+  # - /multirun_overrides/math_env@_global_: math_env_main_multirun_ar_temporal_mixture_pme # <--
+  # - /multirun_overrides/math_env@_global_: math_env_main_multirun_ar_baselines
+  # - /multirun_overrides/math_env@_global_: math_env_main_multirun_ar_tw_cpred_ulds
+  # - /multirun_overrides/math_env@_global_: math_env_main_multirun_dual_head
+  # ....simulation mode..............................
+  - override /simulation_mode: single_agent_flatten_headless # alt: single_agent_flatten_human
+  # ....pipeline.....................................
+  # - override /pipeline: math_env_full_pipeline
+  - override /pipeline: math_env_full_pipeline_multirun
+  - _self_

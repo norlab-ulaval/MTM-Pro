@@ -1,0 +1,168 @@
+
+name: "robotic_3d_env_full_pipeline"
+
+# RLRP-824 (FR1): training data path selector.
+#   replay-buffer -> legacy materialized multistep mbrl ReplayBuffer (default, bit-exact).
+#   dataloader    -> single-step trajectories stored ONCE (HDF5-cached `SingleStepTrajectoryStore`),
+#                    `(history_len, horizon_len)` windows composed lazily per batch
+#                    (`MultistepWindowDataset` -> `WindowDataLoaderDataSource`). Required for the
+#                    asymmetric `horizon_len > history_len` MS->MS configs (E2E-TCN / M3, plan-
+#                    conditioned only) and for the F=500 / F=1000 horizons whose materialized buffer
+#                    would not fit (NeuroBEM ~28-54 GB). Constant batch size only
+#                    (`UDER.batch_size.init_value == limit`); `loop_kind: uder` is rejected.
+data_manager: replay-buffer
+
+ms_replaybuffer_save_dir: "ms_replaybuffer"
+# Expected MS sub dir pattern: "HI<history-len>_HO<horizon-len>"
+
+enable_ms_replaybuffer_saving_to_data_dir: true # ★ <--
+force_regenerating_saved_ms_replaybuffer: true # ★ <--
+
+# RLRP-786 training-step performance levers (`performance_mode`, `cuda_graph_training_step`,
+# `cuda_graph_warmup_steps`, `cuda_graph_allow_autocast`): declared ONCE in `global_config.yaml`
+# (`pipeline:` block, see `global_config.README.md`) and inherited here. This is the SINGLE-RUN /
+# development pipeline (the `*_main_DEV` cfgs compose it) -> it keeps the global `performance_mode: dev`
+# (every debug diagnostic on) and the eager training step. The experiment / HPO pipelines
+# (`*_full_pipeline_multirun`, `*_full_pipeline_hyperparm_optimization`) set `performance_mode: fast`.
+performance_mode: dev
+
+# RLRP-824 (`data_manager: dataloader` only): single-step trajectory HDF5 store cache.
+#   Layout: <data_path>/<ms_hdf5_save_dir>/<environment.name>/source_size=<v>_obsD=<N>_actD=<M>/
+#   The store is (history_len, horizon_len)-independent: ONE cache serves every window shape.
+ms_hdf5_save_dir: "ms_hdf5"
+enable_ms_hdf5_saving_to_data_dir: true
+force_regenerating_saved_ms_hdf5: false
+# Read-only staged copy tried FIRST on load (SLURM: `RLRC_STAGE_DATA_DIR` bound `:ro` into the
+# Apptainer container by `slurm_jobs/lib/hpo_apptainer_common.bash`, FR13c). null -> data_path only.
+ms_hdf5_stage_dir: ${oc.env:RLRC_STAGE_DATA_DIR,null}
+# false -> a cache miss fails fast instead of regenerating (staged SLURM GPU jobs; the CPU GEN-HDF5
+# job `slurm_jobs/RLRP-757-GEN-HDF5/` owns generation, plan risk R10).
+ms_hdf5_allow_generate: true
+# true -> a (re)generated store is written into `<ms_hdf5_stage_dir>/<ms_hdf5_save_dir>` instead of
+# the data root (GEN-HDF5 job only; requires `ms_hdf5_stage_dir`).
+ms_hdf5_write_to_stage_dir: false
+
+# RLRP-824 (`data_manager: dataloader` only) lazy window dataset knobs.
+dataloader:
+  # Bounded, seeded window sub-sample the normalizer statistics are fitted on (plan KD5; the
+  # legacy path fits on the whole buffer). Statistics are per single-step feature, so 65536
+  # windows converge far before the full anchor set.
+  normalizer_fit_max_windows: 65536
+  # pad -> one anchor per single-step sample with boundary padding (legacy composer parity);
+  # exclude -> only windows fully inside a trajectory (documented protocol change).
+  boundary_mode: pad
+  # Residency of the single-step store (and therefore of the anchors + every composed batch).
+  #   auto  -> the model device when it is CUDA, else cpu (default). The store is tiny (tens of MB)
+  #            so composing the windows on the GPU removes the host gather + per-batch H2D copy
+  #            that left the Valeria A100 at ~25 % utilization at F=500 (2026-09-17).
+  #   cpu   -> legacy host gather (+ `mbrl_lib.dataloader.num_workers` / `pin_memory`).
+  #   model -> always the model device; any torch device string (e.g. `cuda:1`) is accepted too.
+  # On a non-cpu store `num_workers` is forced to 0 and `pin_memory` to false (rows are bit-identical).
+  store_device: auto
+
+steps:
+  test_rollout_InD: true
+  test_rollout_OOD: false
+  test_rollout_deterministic: true
+  test_rollout_probabilistic: false
+  test_rollout_ground_truth: true
+  test_rollout_compounded_pred: true
+  # RLRP-728 (S3): opt-in open-loop, control-conditioned per-horizon forecast eval for the
+  # MS->MS baselines (E2E-TCN / M3 / TBM). Default OFF => no behaviour change for existing runs.
+  # Requires a configured (non-identity) `model_ss_out_to_target_env_next_obs` adapter (fail-fast).
+  test_rollout_openloop_forecast: false
+  # RLRP-760 (S3): opt-in compounded SELF-FED MS-forecaster rollout eval (the model's own F-step
+  # forecast is fed back window after window). Default OFF. Declared here (and in
+  # `math_env_full_pipeline.yaml`) so the knobs below can be overridden WITHOUT a `+` prefix.
+  test_rollout_selffed_forecast: false
+
+# RLRP-728 (S3): knob for the open-loop forecast step above (only read when the step is ON).
+test_rollout_openloop_forecast:
+  # One of {plan, last_action_hold, obs_only}. `plan` feeds the horizon's true future actions
+  # a_{t+1..t+H}; `last_action_hold` repeats a_t; `obs_only` feeds no plan (history echo).
+  # RLRP-824 FR14 (d): on an asymmetric `horizon_len > history_len` model `plan` is the ONLY legal
+  # value (fail-fast gate `assert_asymmetric_window_deploy_conditioning`).
+  future_action_conditioning: plan
+
+# RLRP-760 (S3): knobs for the self-fed forecast step above (only read when the step is ON).
+test_rollout_selffed_forecast:
+  # One of {plan, last_action_hold, obs_only}; `plan` only on `horizon_len > history_len` (FR14).
+  future_action_conditioning: plan
+  # null -> falls back to `deploy.target_experiment.ground_truth_feed_warmup_steps` (plan §9-Q4).
+  warmup_steps: null
+
+plot:
+  figsize: [35,18]
+  figdpi: 75 # matplotlib defaut is dpi=100
+  save_dpi: 50 # matplotlib defaut is dpi=100, null to disable saving
+
+  # Note: Recommend using same scaling factors for both ale and epi. The options to use distinct
+  # ones exist mainly for development purposes.
+  ale_uncertainty_scaling: 2
+  epi_uncertainty_scaling: 2
+
+  show_environment_plot: false # ⚠️
+  save_environment_plot: false # ⚠️
+
+  render_dataset_exploration_plot: false
+  show_dataset_exploration_plot: false
+  show_loss_plot: true
+  show_prediction_plot: true
+
+  show_environment_1d_subplot_interval: null
+  show_deploy_prediction_1d_subplot_interval: null
+
+  # RLRP-741: extra 1D prediction plots selected by observation-dimension name (must match names in
+  # `environment.obs_dims`, e.g. `linear_vels.x`, `attitude.w`). Works for both `ugv_general.yaml`
+  # and `quadcopter_general.yaml` (identical `obs_dims`).
+  # Empty/absent => only the x/y/z coordinate subplots are shown (default OFF).
+  # show_prediction_feature_dims: [] e.g. ['linear_vels.x', 'attitude.w']
+  show_prediction_feature_dims:
+    - 'linear_vels.x'
+    - 'linear_vels.y'
+    - 'linear_vels.z'
+    - 'attitude.w'
+    - 'attitude.x'
+    - 'attitude.y'
+    - 'attitude.z'
+    - 'angular_vels.x'
+    - 'angular_vels.y'
+    - 'angular_vels.z'
+
+
+tensorboard:
+  clear_tmp_directory_run_artifact_on_teardown: false
+  batch_callback_execute_every_n: 1 # Option: <int>, null -> disabled batch callback
+
+  # record_trajectory_pred_every_n_train_epoch: null # Default 500, set to null to skip
+  record_trajectory_pred_every_n_train_epoch: 10 # ToDo: fix runtime error
+  trajectory_record_step_size: 100 # Default 100
+  generate_model_graph: false # ToDo: fix the graph generation logic to be compatible with Lightning
+  generate_gradient_figure: false
+  obs_dim_label: ${environment.obs_dims}
+  rollout_dim_label: ["X", "Y", "Z"]
+
+  # ....Epoch callback
+  enable_gradient_and_parameters_histogram: true
+  # A7 (RLRP-788): diagnostic meta-collection kill-switch (perf_RLRP-788_meta_collection_killswitch_plan_20260827.md).
+  enable_meta_collection: true
+  generate_model_parameters_head_leaf: true
+  generate_model_parameters: false # <--
+  generate_model_gradients: false
+  generate_model_gradient_norm: true
+
+  generate_prediction_distributions: false
+  generate_prediction_rollout_mae: false
+
+
+# A8 (RLRP-783 follow-up): opt-in fused (CUDA) Adam that removes the per-parameter
+# `torch.optim.optimizer._get_value(step).item()` device->host sync
+# (`perf_RLRP-783_mtm_pro_models_code_optimization_plan_20260827.md`). Consumed by the main config
+# via `training_common.optimizer.adam_fused: ${oc.select:pipeline.optimizer.adam_fused,false}`.
+# NOTE fused Adam is NOT bit-exact vs the legacy single-tensor kernel and is CUDA-only (the RLRC
+# seam `change_optimizer` falls back to legacy off-CUDA). Enabled on this hot-path pipeline.
+optimizer:
+  adam_fused: true
+
+
+

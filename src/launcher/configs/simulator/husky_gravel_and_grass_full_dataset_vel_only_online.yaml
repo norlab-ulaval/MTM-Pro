@@ -1,0 +1,21 @@
+# /////////////////////////////////////////////////////////////////////////////////////////////////
+#
+#             Husky gravel and grass Full Dataset -- 6-D VELOCITY observation variant
+#
+# /////////////////////////////////////////////////////////////////////////////////////////////////
+name: "husky_gravel_and_grass_full_dataset_vel_only_online"
+
+defaults:
+  - husky_gravel_and_grass_full_dataset_online
+  - _self_
+
+data:
+  label: "Husky gravel and grass (full dataset, online,` velocity obs only)"
+
+obs_dims:
+  - 'linear_vels.x'
+  - 'linear_vels.y'
+  - 'linear_vels.z'
+  - 'angular_vels.x'
+  - 'angular_vels.y'
+  - 'angular_vels.z'

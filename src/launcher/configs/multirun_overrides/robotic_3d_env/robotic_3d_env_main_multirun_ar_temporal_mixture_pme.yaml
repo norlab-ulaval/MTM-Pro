@@ -1,0 +1,90 @@
+# /////////////////////////////////////////////////
+#
+#                        ★
+#             Configuration as in paper
+#         Learning Long-Horizon Predictions
+#              for Quadrotor Dynamics
+#
+# Procedure:
+#   1. Select specialized multirun cfg in robotic_3d_env_main_multirun.yaml
+#   2. Execute: python3 launcher/robotic_3d_env_main_multirun.py
+#
+# /////////////////////////////////////////////////
+
+# ====Experiment===================================
+trial_nb: 1
+
+ms_model:
+  hid_size: ${A_hid_size}
+  num_layers: ${A_nl}
+  ms_head_num_layers: ${A_ms_head_nl}
+  history_len: ${A_hi_len}
+  horizon_len: ${A_ho_len}
+  unrol_len: ${A_unrol_len}
+  ss_composite_loss_weight: ${A_ss_compo_lw}
+
+
+A_nl: ???
+A_ms_head_nl: ???
+A_hid_size: ???
+A_hi_len: ???
+A_ho_len: ???
+A_unrol_len: ???
+A_ss_compo_lw: ???
+
+# ....Multirun sweep...............................
+hydra:
+  mode: MULTIRUN
+  sweeper:
+    params:
+      trial_nb: range(1,11)
+
+      # (Priority) inprogress: experiments
+      dynamics_model@ms_model: ms2ms2ss_ar_temporal_mixture_pme
+
+      # # Hypothesis 1
+      # A_nl: 8
+      # A_ms_head_nl: 3
+      # A_hid_size: 333
+      # A_hi_len: 40
+      # A_ho_len: 20
+      # A_unrol_len: 20
+
+      # Match baseline
+      A_nl: 3
+      A_ms_head_nl: 3
+      A_hid_size: 512
+      A_hi_len: 20
+      A_ho_len: 10
+      A_unrol_len: 10
+
+      A_ss_compo_lw: 0.0 # <--
+
+#  ////////////////////////////////////////////////////////////////////////////////////////////////
+# Hydra multirun
+# Ref
+#   - https://hydra.cc/docs/1.3/tutorials/basic/running_your_app/multi-run/
+#   - https://hydra.cc/docs/1.3/advanced/override_grammar/extended/#sweeps
+#   - https://hydra.cc/docs/1.3/advanced/override_grammar/extended/#reordering-lists-and-sweeps
+#
+# Additional sweep types example
+#   x=range(5)                                # 0-4
+#   x=range(1,5)                              # 1-4
+#   x=range(0,10,step=3.3)                    # 0.0, 3.3, 6.6, 9.9
+#
+#   x=choice(0.0,9.1,10.2)                    # 0.0, 9.1, 10.2
+#   equivalent form -> x=0.0,9.1,10.2
+#
+#   x=tag(foo,bar,interval(0,1))              # 1.0 <= x < 1.0, tags=[foo,bar]
+#   x=extend_list(11,12)                      # x=[1,2,3] -> x=[1,2,3,11,12]
+#
+#   x=interval(1,5)                           # 1.0 <= x < 5.0, auto-cast to floats (not supported by basic sweeper)
+#
+#   shuffle(a,b,c)                            # shuffled a,b,c
+#   shuffle(choice(a,b,c))                    # shuffled choice(a,b,c)
+#   shuffle(range(1,10))                      # shuffled range(1,10)
+#
+#   schema=glob(*)                            # warehouse,support,school
+#   schema=glob(*,exclude=w*)                 # support,school
+#   schema=glob([s*,w*],exclude=school)       # support,warehouse
+#   Note: A glob selects from all options in the config group.

@@ -1,0 +1,39 @@
+name: "neurobem_default"
+
+# Generated using python src/tools/dataset_tools/analyze_winsorizer_config.py --emit-yaml
+winsor_percentile:
+  linear_vels.x:           0.05
+  linear_vels.y:           0.05
+  linear_vels.z:           0.05
+  attitude.w:              0.05
+  attitude.x:              0.05
+  attitude.y:              0.05
+  attitude.z:              0.05
+  angular_vels.x:          0.05
+  angular_vels.y:          0.05
+  angular_vels.z:          0.05
+  motor.m1:                0.05
+  motor.m2:                0.05
+  motor.m3:                0.05
+  motor.m4:                0.05
+  timestamps.delta_stamps: 0.05
+soft_clip_iqr_mult:
+  linear_vels.x:           3.0
+  linear_vels.y:           3.0
+  linear_vels.z:           3.0
+  attitude.w:              3.0
+  attitude.x:              3.0
+  attitude.y:              3.0
+  attitude.z:              3.0
+  angular_vels.x:          3.0
+  angular_vels.y:          3.0
+  angular_vels.z:          3.0
+  motor.m1:                3.0
+  motor.m2:                3.0
+  motor.m3:                3.0
+  motor.m4:                3.0
+  timestamps.delta_stamps: 3.0
+
+# `feature_dim_names` MUST equal the concatenation of obs_dims + act_dims
+# of `src/launcher/configs/simulator/quadcopter_general.yaml`.
+feature_dim_names: ['linear_vels.x', 'linear_vels.y', 'linear_vels.z', 'attitude.w', 'attitude.x', 'attitude.y', 'attitude.z', 'angular_vels.x', 'angular_vels.y', 'angular_vels.z', 'motor.m1', 'motor.m2', 'motor.m3', 'motor.m4', 'timestamps.delta_stamps']

@@ -1,0 +1,64 @@
+# @package _global_
+
+# /////////////////////////////////////////////////
+#
+#                        ★
+#                    ICRA 2026
+#       Configuration for experiment RLRP-757-E4
+#           experiment: Lorenz (full)
+#
+# Procedure:
+#   1. Select specialized multirun cfg in math_env_main_multirun.yaml
+#   2. Execute:
+#       $ python3 launcher/math_env_main.py --config-name=math_env_main_multirun_RLRP-757-DMtmPro-MS --config-dir=launcher/configs/multirun_overrides/math_env/RLRP-757-E4b-low-global-noise
+#
+#   Override nb of trial by adding: --multirun "trial_nb=range(2)"
+#
+# For debuging, add: +dev@_global_=math_env_debug
+#
+# Note:
+#   n_jobs is set using HPO_N_JOBS environment variables in slurm script
+#
+# /////////////////////////////////////////////////
+
+defaults:
+  # ....multirun default.............................
+  # - /multirun_base
+  - /multirun_named_subdir
+  # ....experiment main..............................
+  - /main_experiments/math_env/ICRA2026@_global_: math_env_main_exp_RLRP-757-E4B-low-global-noise
+  # ....MS model......................................
+  - /dynamics_model@ms_model: ms2ms2ss_ar_temporal_mixture_sampling_free_pme
+  - math_env_multirun_MTM_pro_experiment_default_RLRP-757-E4b1
+  # ....simulation mode..............................
+  - override /simulation_mode: single_agent_flatten_headless # alt: single_agent_flatten_human
+  # ....pipeline.....................................
+  - override /pipeline: math_env_full_pipeline_multirun
+  - _self_
+
+trial_nb: 1
+
+experiment_variation_dir_name: DMtmPro-MS
+
+ms_model:
+  history_len: ${A_trj_len.HI}
+  horizon_len: ${A_trj_len.HO}
+  unrol_len: ${A_trj_len.U}
+
+  single_step_loss:
+    enable: false
+
+
+A_trj_len: ???
+
+# ....Multirun sweep...............................
+hydra:
+  mode: MULTIRUN
+  sweeper:
+    params:
+      trial_nb: range(1,5)
+
+      # A_trj_len: choice({HI:20,HO:20,U:20},{HI:20,HO:1,U:1},{HI:20,HO:5,U:5})
+      A_trj_len: choice({HI:20,HO:10,U:10})
+
+

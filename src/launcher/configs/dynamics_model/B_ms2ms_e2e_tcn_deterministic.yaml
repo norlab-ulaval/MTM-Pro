@@ -1,0 +1,89 @@
+
+# ====================================================
+#      Model type: MS->MS forecast baseline (RLRP-692)
+#
+#                        ★
+#          End-to-End-TCN (DIR / one-shot)
+#      Looper & Waslander (CRV 2022) End2EndNet
+#
+# ====================================================
+
+_target_: tools.multistep_tools.models.MS2MSEndToEndTCN
+description: "End-to-End-TCN (one-shot MS->MS forecast baseline)"
+
+# Deterministic single net is intrinsic to this baseline (deterministic is hard-fixed in the
+# model; not exposed here).
+ensemble_size: 1 # model-ensemble not supported (deterministic single net); only 1 is valid
+mae_loss: true
+propagation_method: null
+# Option: expectation, fixed_model, random_model, null
+
+# ....Multistep....................................
+history_len: 20
+horizon_len: 10 # forecast horizon slice (trailing portion of the H-step forecast)
+
+# Future-action-plan conditioning (RLRP-781 / RLRP-790).
+#   true (default) -> the model is TRAINED and evaluated on the plan a_{t+1..t+F-1};
+#   false           -> the true plan-FREE BASELINE: no plan at train time, and a plan supplied at
+#                      test time is REJECTED (fail-fast) instead of silently conditioning.
+# ⚠️ A test-time `obs_only` rollout of a plan-TRAINED model is a DEPRIVATION ABLATION, not a
+# plan-free baseline: the two are different experiments and need separate training runs.
+enable_future_action_plan_conditioning: true
+
+# Mixed precision (RLRP-824 Step 7, FR9). Opt-in `torch.autocast` around the Lightning
+# training_step / validation_step (forward + loss only; parameters, optimizer state and the
+# backward stay in the model dtype). Options: null (default, bit-exact fp32/fp64 path) | bf16 | fp16.
+# FR15 profiling gate (Jetson Orin, every dataset row): bf16 = 2.5-3.5x on E2E-TCN (GO, the
+# documented ULH opt-in); NO-GO on the M3 per-horizon LOOP (dispatch-bound, bf16 was slower) --
+# re-evaluate with `vectorized_family_forward: true`. fp16 runs WITHOUT a GradScaler (CUDA only).
+mixed_precision: null
+
+# Explicit *is-future* mask INPUT channel (E2E-TCN paper-fidelity review).
+#   false (default) -> PAPER-FAITHFUL: the per-step channel count is exactly the reference
+#                      End2EndNet's, and the unknown future observations are a BARE ZERO FILL --
+#                      so the net cannot tell "obs unknown" from "obs == 0". That ambiguity is
+#                      the ORIGINAL AUTHORS' flaw and is reproduced deliberately: this is a
+#                      reference baseline, so fidelity outranks local optimality.
+#   true            -> RLRC variant (ex operator decision D6): one extra channel disambiguates
+#                      the future block. Strictly more informative than the paper => must be
+#                      captioned as an ABLATION, never as "the E2E-TCN baseline".
+# ⚠️ Changing this widens the first conv layer: checkpoints are NOT interchangeable.
+enable_is_future_mask_channel: false
+
+# ... End2EndNet body ..........
+num_layers: 4 # number of TConvBlocks (depth); >= 2
+hid_size: 32 # intermediate channel width
+kernel_size: 5
+dilations: [1, 2, 4, 8]
+
+# Activation function. The reference End2EndNet (Looper & Waslander, CRV 2022) uses ReLU, which is
+# the paper-faithful default here. This node is the experimental override point: swap `_target_`
+# (e.g. torch.nn.GELU, torch.nn.LeakyReLU) to depart from the paper for experimentation.
+activation_fn_cfg:
+  _target_: torch.nn.ReLU
+
+# ====General======================================
+dropout: 0.0
+model_use_double_precision: false # ⚠️
+
+singlestep_obs_len: ??? # quickhack
+singlestep_act_len: ??? # quickhack
+# RLRP-736: per-feature geometry loss weight (0.0 -> OFF / bit-exact legacy loss).
+# Set > 0 to enable the orientation-aware geodesic term for envs whose feature
+# handler defines a quaternion group (robotic-3D UGV/UAV); no effect for the
+# neutral math-env handler.
+feature_geometry:
+  loss_weight: 0.0
+  loss_objective: null # Options: geodesic (default), chordal, null (disable)
+  # RLRP-751: false (default) -> STATIC weighting (scaled by loss_weight, legacy
+  # behaviour); true -> route the SS/MS/CP feature-geometry channels through the
+  # composite uncertainty auto-weighting (Kendall 2018), with loss_weight as the
+  # pre-multiplier. ONE key controls all three channels; gracefully degrades to
+  # STATIC on families without an (enabled) composite auto-weighting module.
+  auto_weighting: false
+
+
+
+device: ${device}
+in_size: ???
+out_size: ???

@@ -1,0 +1,79 @@
+name: "lorenz_v6_5XinitC_low_global_noise"
+
+defaults:
+  - math_env_general
+  - _self_
+
+obs_are_dt_derivatives: true
+obs_time_is_delta_time: true
+
+data:
+  label: "Lorenz attractor (V6, 5x init conditions, low global noise)"
+
+  trajectories:
+    - initiale_coordinates: [0.0, 1.0, 1.05]
+      param:
+        s: 10.09
+        r: 28.000001
+        b: 2.667
+    - initiale_coordinates: [0.0, 1.0, 1.05]
+      param:
+        s: 10.09
+        r: 28.0000025
+        b: 2.667
+    - initiale_coordinates: [0.0, 1.0, 1.05]
+      param:
+        s: 10.09
+        r: 28.000004
+        b: 2.667
+    - initiale_coordinates: [0.0, 1.0, 1.05]
+      param:
+        s: 10.09
+        r: 28.000007
+        b: 2.667
+    - initiale_coordinates: [0.0, 1.0, 1.05]
+      param:
+        s: 10.09
+        r: 28.000011
+        b: 2.667
+
+  test_InD_trajectory:
+    - initiale_coordinates: [0.0, 1.0, 1.05]
+      param:
+        s: 10.09 # InD
+        r: 28.000005 # InD
+        b: 2.667 # InD
+      category: L
+    - initiale_coordinates: [0.0, 1.0, 1.05]
+      param:
+        s: 10.09 # InD
+        r: 28.000009 # InD
+        b: 2.667 # InD
+      category: L
+    - initiale_coordinates: [0.0, 1.0, 1.05]
+      param:
+        s: 10.09 # InD
+        r: 28.000011 # InD
+        b: 2.667 # InD
+      category: L
+
+  test_OOD_trajectory: null
+
+global_interval_idx: [0, 10001]
+time_space:
+  bound: [0,60]
+  granularity: ${environment.global_interval_idx[1]}
+
+global_measurement_noise:
+  interval: ${environment.global_interval_idx}
+  magnitude: 0.00001 # Note: `standard_normal * magnitude` should be smaller than `obs` delta
+measurement_noise: []
+
+ood_test_global_measurement_noise:
+  interval: ${environment.global_interval_idx}
+  magnitude: 0.00001 # Note: Same noise as training
+ood_test_measurement_noise: []
+
+# explorable_space: [[0, 5501]]
+explorable_space: [[0, 10001]]
+# explorable_space: [[0,3500],[4500,6000]]

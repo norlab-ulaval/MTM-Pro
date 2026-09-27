@@ -1,0 +1,139 @@
+
+# ====Model type: Multistep===========
+
+_target_: tools.multistep_tools.models.WeightedMultiStepDualHeadMLP
+description: "Weighted multistep dual head PME"
+
+ensemble_size: 5 # ★★★ Require ensemble_size > 1
+deterministic: false # ★★★
+propagation_method: expectation # ★★★
+learn_logvar_bounds: true # ★★★
+
+mae_loss: true
+distribution_name: laplace # ★
+
+enable_auto_loss_weighting: true
+ss_composite_loss_weight: 1.0
+ms_composite_loss_weight: 1.0
+enable_multistep_head: true # ★★★
+
+# ....Multistep....................................
+dual_head_shared_input_layer: true # ★
+
+
+# temporal_weights:
+#   - 0.99
+#   - 0.9
+#   - 0.85
+#   - 0.8
+#   - 0.7
+temporal_weights: 0.9
+# `ms_temporal_weighting_mode` (RLRP-769): HOW the temporal discount w_j=gamma^j enters the
+# per-step NLL + the matching horizon scale. Options:
+#   log-shift    -> nll_j + log w_j (legacy, former default; gamma gradient-inert, magnitude ~ horizon_len)
+#   tempered     -> w_j*nll_j, sum_j w_j=1 (convex combo; gamma effective; horizon-scale invariant)
+#   discounted-sum -> gamma^j*nll_j (raw EMA, w_0=1; gamma effective; magnitude ~ 1/(1-gamma)) [DEFAULT]
+#   joint        -> sum_j nll_j (exact independent joint NLL; undiscounted)
+#   uniform-mean -> (1/horizon_len) sum_j nll_j (discount ablated; scale fixed)
+ms_temporal_weighting_mode: discounted-sum
+# Options: true,false,null
+ms_probabilities_reduction: independent
+
+# obs_feature_weights:
+#   - 1.0
+#   - 1.0
+#   - 1.0
+# act_feature_weights:
+#   - 1.0
+#   - 1.0
+
+history_len: 20
+horizon_len: 10
+
+singlestep_obs_len: ??? # quickhack
+singlestep_act_len: ??? # quickhack
+
+# Per-region layer-bloc selector (RLRP-768; superset of `residual_form`).
+#   null (default) -> encoder/hidden -> residual_v2; every other region
+#     (decoder, ms_head, ss_head, mixture, projection, probabilistic_head) -> dense.
+#   Override per region, e.g. `layer_bloc: {encoder: {type: gated_mlp, layer_norm: true}}`.
+#   type in {residual_v2, residual_legacy, dense, gated_mlp}; gated_mlp + layer_norm
+#   are legal ONLY in encoder/hidden. `residual_form` (if present) stays a working alias.
+layer_bloc:
+  encoder:
+    type: residual_v2
+    layer_norm: false
+    dropout: null
+  ms_head:
+    type: dense
+
+num_layers: 4
+hid_size: 444
+ms_head_num_layers: 1
+ms_head_dropout: 0.25
+ss_head_num_layers: 4
+
+activation_fn_cfg:
+  # _target_: torch.nn.ReLU
+  # _target_: torch.nn.GELU  # ★ recommended: smooth, no hard saturation, good gradient flow
+  # _target_: torch.nn.LeakyReLU  # viable alternative: no saturation, linear for negatives
+  # _target_: torch.nn.SiLU  # Also known as the swish function
+  _target_: torch.nn.Mish # Better precision than ReLU and Swish, better generalization
+
+# Activation fct ref
+# - https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity
+# - (2021) https://www.v7labs.com/blog/neural-networks-activation-functions
+
+
+## ....Notable reference Run ★★★...................
+## Run › 2024.09.24/233635
+#num_layers: 2
+#hid_size: 64
+#activation_fn_cfg:
+#  _target_: torch.nn.SiLU
+
+# ... Train-Time Domain Randomization ..........
+# Train-time domain randomization top layer (OFF by default).
+# Introduced by task RLRP-707 of the Training-Pipeline Domain Randomization `.junie` plan
+# (feature_training_pipeline_domain_randomization_plan_20260610.md).
+train_time_domain_randomization:
+  enable: false               # ★ disabled by default for all parent and child models
+  noise_kind: gaussian        # Options: gaussian, uniform, time_correlated, reverse_time_correlated, time_correlated_hi_to_ho, reverse_tc_in_tc_out
+  default_scale: 0.0          # Fallback when per_feature_scale is None
+  per_feature_scale: null     # List of per-feature noise magnitude
+  correlation: 0.0            # AR(1) coeff in [0, 1) for time_correlated kinds: 0.0 => i.i.d. noise (no
+                              # temporal correlation); 0.5 => moderate correlation between consecutive
+                              # timesteps; ->1.0 => strongly persistent (noise nearly constant along time).
+  randomize_target: false     # Enable DR for model input and target (REQUIRED true for time_correlated_hi_to_ho, reverse_tc_in_tc_out)
+  scheduler:
+    kind: constant            # One of constant, linear, ease_in_out_ramp or cyclic_cosine.
+    start_scale: 1.0          # Multiplier value at (or before the end of) the warmup phase.
+    end_scale: 1.0            # ramp kinds: target value; cyclic_cosine: envelope target (grows/shrinks wave magnitude).
+    warmup_epochs: 0          # Number of initial epochs held at start_scale.
+    total_epochs: 0           # ramp kinds: epoch index at which end_scale is reached (clamped after).
+    cycle_length: 0           # cyclic_cosine: wave length (period) in epochs.
+    cycle_length_growth: 0.0    # cyclic_cosine: epochs added to the period per elapsed epoch; widens (>0) / narrows (<0), independent of total_epochs.
+    trough_growth: 0.0          # cyclic_cosine: lifts the per-cycle lowest point (0.0 => trough returns to 0; 0.25 => +25% of envelope per cycle).
+
+
+# ====General======================================
+dropout: 0.0
+
+model_use_double_precision: false # ⚠️
+# RLRP-736: per-feature geometry loss weight (0.0 -> OFF / bit-exact legacy loss).
+# Set > 0 to enable the orientation-aware geodesic term for envs whose feature
+# handler defines a quaternion group (robotic-3D UGV/UAV); no effect for the
+# neutral math-env handler.
+feature_geometry:
+  loss_weight: 0.0
+  loss_objective: null # Options: geodesic (default), chordal, null (disable)
+  # RLRP-751: false (default) -> STATIC weighting (scaled by loss_weight, legacy
+  # behaviour); true -> route the SS/MS/CP feature-geometry channels through the
+  # composite uncertainty auto-weighting (Kendall 2018), with loss_weight as the
+  # pre-multiplier. ONE key controls all three channels; gracefully degrades to
+  # STATIC on families without an (enabled) composite auto-weighting module.
+  auto_weighting: false
+
+device: ${device}
+in_size: ???
+out_size: ???

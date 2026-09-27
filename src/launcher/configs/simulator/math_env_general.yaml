@@ -1,0 +1,18 @@
+name: "math_env_general"
+
+# /////////////////////////////////////////////////////////////////////////////////////////////////
+#
+#                        Math environment general configuration
+#
+# Shared base for every math (time-series dynamical-system) environment config in this
+# `simulator` group (Lorenz, Rossler, Aizawa, spirals, projections, oscillators, ...).
+# Analogue to `quadcopter_general.yaml` / `ugv_general.yaml` for the robotic-3D environments.
+#
+# /////////////////////////////////////////////////////////////////////////////////////////////////
+
+# RLRP-736: per-environment feature handler selection. The math env has no special feature
+# semantics -> the math handler is all SCALAR/INHERIT and is the bit-exactness regression guard
+# (plan S2.1). Absent key would also fall back to `build_default_scalar_handler`, which is
+# behaviourally identical here.
+feature_handler:
+  _target_: tools.feature_handling_tools.env_handlers.build_math_env_handler

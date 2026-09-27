@@ -1,0 +1,407 @@
+
+comment: "" # Note: Leave empty. Usefull to add commentary to command line executed run
+
+experiment: ${overrides.experiment} # (Original) ToDo: assessment >> Renamed to experiment_name
+# experiment_name: "default" # Note: Overide in your <app-name>.yaml # <- DNA version
+# experiment_name: ${overrides.experiment}
+
+# ....General setting....................
+startup_info: false # <--
+show_plot: false
+reset_tensorboard_dir: false
+debug_mode: false # <--
+debug_mode_force_early_exit: false
+seed: null
+
+# ....Config used by mbrl-lib logger.....
+log_frequency_agent: 1000
+
+# ....Tensorboard writer settings........
+# Lossless, legacy-default knobs introduced by the Training Speed &
+# Efficiency plan (stage 1, Batch 1 — actions A5 + C5). Defaults
+# preserve pre-existing behaviour bit-exact:
+#   - flush_secs=120 matches torch.utils.tensorboard.SummaryWriter default;
+#   - publish_every_n_erll_epochs=1 means every ERLL epoch (no gating).
+# Raise publish_every_n_erll_epochs to N>1 to reduce per-epoch
+# .cpu().numpy() + histogram cost when trajectory-level distributions
+# are not needed every ERLL epoch.
+pipeline:
+  tensorboard:
+    flush_secs: 120
+    publish_every_n_erll_epochs: 1
+    batch_callback_execute_every_n: 10 # Option: <int>, null -> disabled batch callback
+    clear_tmp_directory_run_artifact_on_teardown: true
+
+  # ....Training-step performance levers (RLRP-786)........................................
+  # ⚠️ SINGLE OWNER of the defaults below (consolidated here 2026-09-19, AI operator directive).
+  #   Every `/pipeline` group file inherits them (`global_config` is composed FIRST, the pipeline
+  #   group merges on top), so a pipeline yaml only re-declares a key when its value DIFFERS:
+  #     - `*_full_pipeline_multirun` / `*_full_pipeline_hyperparm_optimization` (experiments, HPO)
+  #       -> `performance_mode: fast`
+  #     - `*_full_pipeline` (single run, the `*_main_DEV` cfgs) and every `dev/*debug*` overlay
+  #       (`+dev@_global_=robotic_3d_env_debug`) -> `performance_mode: dev`
+  #   Read ONCE at model setup by `pipeline_utils/general/setup.py` (`resolve_performance_mode`,
+  #   `maybe_enable_cuda_graph_training_step`); the benchmark pipeline consumes the same keys
+  #   (`robotic_3d_env_train_step_dev_profiling_pipeline.py`). Full description + the precision logic:
+  #   `src/launcher/configs/global_config.README.md`.
+  #
+  # performance_mode (FR8 / Key Decision 8, `perf_RLRP-786_cuda_graph_train_step_plan_20260919.md`):
+  #   development vs paper-run instrumentation of the training step (MTM-Pro + AR MS2SS families
+  #   through `PerformanceModeMixin`; other families: no-op).
+  #   dev  -> every development / debug diagnostic ON (bit-exact legacy): on-device non-finite guard
+  #           kernels in `weight_values` / `check_finite`, the per-step `flush_non_finite_reports()`
+  #           host sync, diagnostic `meta` collection ON unless `tensorboard.enable_meta_collection`
+  #           says otherwise.
+  #   fast -> the dev/debug-only instrumentation is OFF (no guard kernels, no per-step flush, `meta`
+  #           collection defaults to OFF unless `tensorboard.enable_meta_collection` is set
+  #           explicitly); `loss` / grads / Adam state are `torch.equal` to `dev` (the switch removes
+  #           instrumentation, never arithmetic). PRECONDITION of the CUDA-graph captured step.
+  performance_mode: dev
+  # cuda_graph_training_step (FR5, same plan): OPT-IN CUDA-graph captured training step. `true` ->
+  #   the Lightning `training_step` of `OneDTransitionRewardModelV2` records `loss -> backward ->
+  #   fused+capturable Adam` ONCE in a `torch.cuda.CUDAGraph` (`tools/torch_tools/cuda_graph_train_step.py`)
+  #   after `cuda_graph_warmup_steps` eager steps and REPLAYS it (same kernels, one launch;
+  #   `torch.equal` to eager, verified on the Jetson AGX Orin and on the Narval A100). Preconditions,
+  #   else a ONE-LINE NOTICE and the run stays eager (never raises): CUDA device, `performance_mode: fast`,
+  #   a model exposing `cuda_graph_capture_blockers()` with an empty list (sampling-free MTM-Pro with
+  #   `ms_model.cuda_graph_capture_ready: true`; AR MS2SS family = AR-TCN / MLP-AR / GRU / LSTM on a
+  #   frozen-scheduler cfg), no autocast unless `cuda_graph_allow_autocast`. Ragged tail batches and
+  #   validation run eagerly; `adam_capturable` is requested automatically; an lr change re-records.
+  #   Measured (A100, fp32 "highest"): DMtm-Pro MS+CP 121.6 -> 45.7 ms/step (x2.66), AR-TCN 329.9 ->
+  #   312.2 (x1.06, compute-bound). Default `false`: the paper batch stays eager (operator decision,
+  #   RLRP-786 completion record); flip per run / experiment cfg, not here.
+  cuda_graph_training_step: false
+  cuda_graph_warmup_steps: 3
+  # cuda_graph_allow_autocast (FR4, `perf_RLRP-786_ar_tcn_cuda_graph_fp32_baseline_plan_20260919.md`):
+  #   `true` -> ALSO capture a `ms_model.mixed_precision` (autocast bf16 / fp16) training step --
+  #   EXPLORATORY. The captured region runs under `torch.autocast(..., cache_enabled=False)` (the
+  #   autocast weight-cast cache is not replayable), i.e. one weight re-cast per unroll step instead
+  #   of one per step: NOT the eager kernel sequence (A100 AR-TCN bf16: 3 074 -> 3 339 kernels/step),
+  #   parity is `allclose` (not `torch.equal`). Default `false` keeps the autocast step eager ("the
+  #   captured step is fp32 only" notice). Paper rows stay fp32 `highest`.
+  cuda_graph_allow_autocast: false
+
+# ....Diagnostics (per-stage profiling).
+# Placeholder for action E1 (Batch 3). When true, the ERLL loop will
+# collect per-stage timers (data / forward / backward / rollout /
+# save / tb). OFF by default; behaviour is legacy when false.
+diagnostics:
+  profile_breakdown: false
+
+  # ....LR schedule pre-flight audit (RLRP-770)........................................
+  # Static (t=0) audit of the composed Law-U learning-rate law
+  # `lr(p, e) = base · g(p) · h(e)`. Advisory only: it NEVER mutates training, it just
+  # reports (at run start) the share of the planned epoch budget that would run below
+  # `relative_lr_threshold` of the peak realized LR, i.e. at an effectively frozen LR.
+  # Only runs under Law-U (`UDER.uder_lr_schedule.law_u_enable: true`) and when the epoch
+  # grid is statically known (no patience-driven `null` pass budget); it skips honestly
+  # otherwise. Defaults below preserve the code's built-in behaviour bit-for-bit.
+  #   enable:                false -> fully skip the audit.
+  #   relative_lr_threshold: an epoch is "frozen" when its LR is below this fraction of
+  #                          the run's peak realized LR (0.01 = 1%).
+  #   max_flat_ratio:        flag the configuration when more than this fraction of the
+  #                          total epoch budget is frozen (0.25 = 25%).
+  #   on_violation:          `warn` (log only) | `raise` (abort at t=0 when flagged).
+  lr_schedule_audit:
+    enable: true
+    relative_lr_threshold: 0.01
+    max_flat_ratio: 0.25
+    on_violation: warn
+
+# ....mbrl-lib fork knobs................
+mbrl_lib:
+  # Training Speed & Efficiency plan, stage 1 Batch 2 — action B0-bis.
+  #
+  # use_preallocated_best_weights_buffer:
+  #   When true, `ModelTrainer.maybe_get_best_weights` updates an
+  #   in-place, preallocated best-weights buffer via
+  #   `param.data.copy_(..., non_blocking=True)` instead of calling
+  #   `copy.deepcopy(self.model.state_dict())` on every improved
+  #   inner epoch (up to 2000 per run). Bit-exact by construction:
+  #   the buffer is a *clone* of the model's state_dict on first
+  #   improvement, and is updated element-wise thereafter.
+  #   Default **false** (legacy path, `copy.deepcopy`) so current
+  #   experiments remain reproducible; flip to true to cut D→H
+  #   allocations on the hot path.
+  use_preallocated_best_weights_buffer: false
+
+  # Training Speed & Efficiency plan — action C1 (stage 2, parent plan)
+  # merged with stage-1 follow-up action F-C1b (both share the same
+  # submodule ctor site in `utilities/mbrl-lib/mbrl/util/replay_buffer.py`
+  # L473–554).
+  #
+  # keep_replay_buffer_on_device:
+  #   When true AND `torch.cuda.is_available()`, ask
+  #   `mbrl.util.ReplayBuffer` to allocate its internal TensorDict storage
+  #   directly on the active CUDA device (via the new `device=` kwarg).
+  #   Batch gathers performed by the numpy-indexed `TransitionIterator`
+  #   then stay on-device and the synchronous H→D copy currently paid on
+  #   every training batch disappears.
+  #   Default **false** (legacy CPU path, bit-exact with the pre-patch
+  #   code path) so current experiments remain reproducible.
+  # replay_buffer_max_frac_of_free_vram:
+  #   Head-room factor used by the auto-fallback VRAM guard. The guard
+  #   runs at load time only (one-shot check, no per-batch overhead):
+  #   when `keep_replay_buffer_on_device=true` and the estimated buffer
+  #   byte-size would exceed
+  #   `replay_buffer_max_frac_of_free_vram * torch.cuda.mem_get_info()[0]`
+  #   (i.e. free VRAM reported by CUDA at call time), the helper silently
+  #   falls back to the CPU path and logs a single WARNING summarising
+  #   the decision. Default 0.5 leaves room for model weights, cuDNN
+  #   workspaces (A3a), pinned `DataLoader` batches (F-C2), and the
+  #   preallocated best-weights buffer (B0-bis). Set to 1.0 to disable
+  #   the guard (explicit operator opt-in for the "I know what I'm
+  #   doing" case).
+  #
+  # ⚠️ ENABLED by RLRP-775 action A17 (2026-09-02, AI operator directive).
+  #   Rationale: the PI-TCN training buffer is 358 619 transitions x ~30 float32
+  #   features ~= 43 MiB, i.e. ~0.1 % of an A100's 40-80 GiB, so it fits trivially
+  #   on-device and removes the synchronous H->D copy paid on EVERY training batch
+  #   (~716 train + ~72 val batches/epoch x 400 epochs). Values are unchanged (a
+  #   gather is a gather), so this is a data-placement change, not a numerics one.
+  #   The load-time VRAM guard below still auto-falls back to the CPU path on
+  #   smaller GPUs, and the whole feature is a no-op without CUDA (Darwin/MPS
+  #   container, CPU CI).
+  #
+  # ⚠️ MEASURED (RLRP-775 Rev 14, plan section 6.9.3): the wall-clock gain is
+  #   ~= 1.000x, NOT the "few %" the rationale above expected. One batch is only
+  #   ~55 KiB (512 x ~27 float32), i.e. ~6 us over a PCIe-4 A100 link ~= 0.003 %
+  #   of a 176 ms AR-TCN step; on the Jetson Orin the iGPU shares physical memory
+  #   with the CPU so there is no copy to remove at all (Orin A/B: 0.9819 ms/batch
+  #   host-resident vs 1.0015 ms/batch device-resident => Amdahl ceiling 0.9999x).
+  #   KEEP IT ENABLED anyway, but for the CORRECTNESS property, not for speed:
+  #   before actions A19/A20 the CONFIGURED placement was not the EFFECTIVE one
+  #   (silently demoted back to the host by the buffer-derivation helpers), and it
+  #   is the only coherent setting given the `num_workers: 0` constraint below
+  #   (worker processes cannot receive CUDA-resident batches). It also matters for
+  #   any future config whose per-batch payload is no longer negligible.
+  keep_replay_buffer_on_device: true
+  replay_buffer_max_frac_of_free_vram: 0.5
+
+  # Training Speed & Efficiency stage-1 follow-up plan — action F-C2.
+  #
+  # Opt-in DataLoader knobs for the mbrl-lib fork's train/val loaders
+  # (see `utilities/mbrl-lib/mbrl/models/model_trainer.py` L535,541).
+  # All four keys default to legacy behaviour (single-process data
+  # loading, no pinned host memory, no prefetch) so current
+  # experiments stay bit-exact with the pre-patch code path.
+  #
+  #   num_workers:
+  #     Number of subprocesses spawned by DataLoader for async batch
+  #     fetching. `0` = main-thread path (legacy). Increase to 1-2 on
+  #     HPC nodes with CPU headroom to overlap batch assembly with
+  #     GPU compute. Reproducibility caveat: worker RNG reshuffle is
+  #     not accounted for in the seeded A/B harness — never enable
+  #     `num_workers>0` for bit-exact comparison runs.
+  #   pin_memory:
+  #     Ask DataLoader to allocate fetched batches in pinned host
+  #     memory, which enables async H2D copies when paired with
+  #     `tensor.to(device, non_blocking=True)`. Auto-gated on CUDA
+  #     only inside `ModelTrainer.train(...)` — silently forced to
+  #     False on CPU / MPS even when this key is true.
+  #   persistent_workers / prefetch_factor:
+  #     Only applied when `num_workers>0`; PyTorch raises otherwise.
+  #     `persistent_workers` keeps worker processes alive across
+  #     epochs to amortise startup cost; `prefetch_factor` controls
+  #     the queue depth per worker (null = PyTorch default of 2).
+  #
+  # ⚠️ MEASURED VERDICT (RLRP-775 action A10, Jetson AGX Orin, batch 512):
+  #   DO NOT ENABLE. The defaults below are also the FASTEST configuration.
+  #   Rationale — `ModelTrainer` builds the loader with `batch_size=None`, so
+  #   batching happens inside the `TransitionIterator` and one "sample" is a
+  #   whole `TransitionBatch` gathered from in-RAM torch tensors. There is no
+  #   decode / augmentation / disk I/O for workers to hide.
+  #     * loader cost = 0.95 ms/batch vs a ~176 ms training step => ~0.5 % of
+  #       wall-clock; the theoretical best case is 1.005x.
+  #     * every worker combo REGRESSED: 10x slower at `num_workers=1` +
+  #       `persistent_workers=true`, ~220x slower without persistence (worker
+  #       respawn dominates).
+  #   Two silent-correctness hazards were reproduced. They lived in OUR OWN
+  #   mbrl-lib fork (`utilities/mbrl-lib`, github.com/anonymous/mbrl-lib) and
+  #   are now GUARDED IN CODE by RLRP-775 action A12 (§6.5.3) — the broken
+  #   combinations are no longer reachable from this config block:
+  #     H1  `num_workers >= 2` DUPLICATED THE EPOCH (the `_IteratorDataset`
+  #         bridge is unshardable, so every worker replayed the full iterator —
+  #         measured 40 -> 80 batches at 2 workers). A12: `ModelTrainer.train`
+  #         now RAISES `ValueError`, and `_IteratorDataset.__iter__` raises
+  #         `RuntimeError` inside any sharded worker. Allowed values: 0 or 1.
+  #     H2  `num_workers > 0` with `persistent_workers: false` FROZE the
+  #         per-epoch reshuffle (workers re-fork an RNG the parent never
+  #         advances). A12: `persistent_workers=True` is now FORCED whenever
+  #         `num_workers > 0` (a `RuntimeWarning` reports the override), so the
+  #         key below only matters as documentation of intent.
+  #   See `.junie/active_plans/perf_tcn_ms2ss_training_speed_RLRP-775.md` §6.4.
+  #
+  # RLRP-824 (`pipeline.data_manager: dataloader`): the lazy window path replaces the
+  #   unshardable `_IteratorDataset` bridge by a map-style `MultistepWindowDataset` served
+  #   through ONE `DataLoader` pair per run (`WindowDataLoaderDataSource`), so
+  #   `num_workers >= 2` is LEGAL there (persistent_workers is forced true, pin_memory is
+  #   honoured on CUDA, the daemonic-Joblib guard falls back to 0 with a warning). The
+  #   legacy replay-buffer bridge keeps the A12 `ValueError` above. Measured verdict
+  #   (RLRP-824 FR15 per-dataset matrix, Jetson AGX Orin): the host window gather is
+  #   <= 0.8 % of a batch on every dataset row, so workers are NOT a speed knob on the
+  #   dataloader path either -- keep 0; use them only for HDF5-lazy / very large stores.
+  dataloader:
+    num_workers: 0
+    pin_memory: false
+    persistent_workers: false
+    prefetch_factor: null
+
+# ....Torch backend flags................
+# Training Speed & Efficiency plan, stage 2 Batch S2-2 — action A3a.
+#
+# ⚠️ SINGLE OWNER of the process-global `torch.backends` state (RLRP-824
+#   consolidation, 2026-09-16): this group is read ONCE by
+#   `apply_torch_backend_cfg(cfg)` inside `R2S2RPipelineHydraApp.setup()`,
+#   before any CUDA kernel runs (precision first, then cuDNN autotune), and a
+#   consolidated "torch.backends final state" line is logged. No pipeline /
+#   trainer setup code writes these flags (the short-lived
+#   `training_common.cuda_backend.{allow_tf32,cudnn_benchmark}` duplicate was
+#   removed: it re-wrote the same flags at trainer setup with `false` defaults,
+#   silently reverting `cudnn_benchmark: true` below and fighting
+#   `cuda_high_precision_float32` for the TF32 switch). The A100 TF32 speed
+#   opt-in (FR15 profiling gate: 1.7-1.9x on E2E-TCN fp32) is therefore
+#   `torch_backend.cuda_high_precision_float32: false`. `ms_model.mixed_precision`
+#   (autocast, per-model step context) is NOT global state and stays on the model.
+#
+# cudnn_benchmark:
+#   When true, enables `torch.backends.cudnn.benchmark = True` at
+#   pipeline setup time. cuDNN then autotunes its fp32 convolution
+#   kernel selection on the first forward pass of each unique input
+#   shape. Safe for the RLRC multistep stack because training input
+#   shapes are fixed (history_len=20, horizon_len=20, batch_size
+#   bounded by `PBER`). Auto-gated on `torch.cuda.is_available()` —
+#   silently no-op on M3 DNA Docker (CPU-only) and on any non-CUDA
+#   device. Default **false** (legacy behaviour, bit-exact with the
+#   pre-patch code path); flip to true on CUDA targets once a 3-seed
+#   A/B on Orin / V100 shows ±0 % MAE drift vs. legacy.
+#
+#   ⚠️ ENABLED by RLRP-775 action A16 (2026-09-02, AI operator directive).
+#   The training shapes of the PI-TCN run are fully static (`HI=20`, `HO=10`,
+#   `batch_size` pinned at 512 because `init_value == limit`), which is exactly
+#   the autotune-friendly case: the one-off benchmarking cost is paid on the
+#   first batch and amortised over ~286 400 steps. cuDNN autotune selects a
+#   kernel, it does NOT change arithmetic precision (unlike TF32, see
+#   `cuda_high_precision_float32` below, deliberately left at `true`), so the
+#   only expected deviation is last-bit kernel-selection noise.
+#
+# cuda_high_precision_float32:
+#   When true (default), `R2S2RPipelineHydraApp.setup()` calls
+#   `configure_cuda_float32_high_precision()` which disables TF32 and selects the
+#   `"highest"` float32 matmul precision. On Ampere CUDA hosts (Valeria GPUs,
+#   Jetson-AGX-Orin) this prevents the silent ~10-bit mantissa truncation TF32
+#   applies to any `float32` fallback, so numerical precision is preserved.
+#   Auto-gated on `torch.cuda.is_available()` — a harmless no-op on the CPU-only
+#   MacBookPro Silicone DNA Docker container and a no-op under `float64`. Set to false to trade
+#   precision back for TF32 throughput on CUDA targets.
+torch_backend:
+  cudnn_benchmark: true
+  cuda_high_precision_float32: true
+
+training_common:
+
+  # (Priority) ToDo(RLRP-831): refactor-out >> next bloc ↓↓ to 'src/launcher/configs/global_config.yaml'
+  # RLRP-773: checkpoint knobs aggregated under the `checkpoint` group. The legacy flat keys
+  # (`checkpoint_performance_measure`, `force_checkpoint_interval`) are still honoured as a
+  # fallback for un-migrated configs, but the grouped keys below take precedence.
+  checkpoint:
+    performance_measure: val_loss # Options: val_loss, testtime_rollout_mae, testtime_rollout_l2norm ⚠️
+    # epoch-interval persistent checkpointing cadence (global completed inner epochs).
+    # Options: int >= 1 (save a (model, optimizer) snapshot every N global epochs, and disable
+    # early-stopping so the full budget runs) or null => feature OFF / legacy behaviour. When set,
+    # every ERLL pass epoch budget MUST be an explicit int (a null/patience-driven budget raises).
+    force_interval: null
+    # RLRP-773 (§11): optimizer persistence in each epoch checkpoint. Options:
+    #   null (default; legacy `false`) => model-only snapshot (weights + normalizers), lightest;
+    #   all  (legacy `true`)           => an `optimizer.pth` in EVERY epoch checkpoint dir;
+    #   latest                          => a single run-wide `optimizer_latest.pth` overwritten on
+    #                                      each save (running latest; O(1) optimizer disk cost).
+    include_optimizer: null
+    # RLRP-773 (§11): also persist the pass-boundary best-val weights as `epoch_<E>_pass_best/`.
+    # Default false (was always-on before §11). Set true to keep both provenances on disk.
+    include_pass_best: false
+    # RLRP-824 (FR6): also write the normalizer statistics inside EVERY `epoch_<E>/saved_dynamic_model/`
+    # (legacy layout, default true). `false` => weights-only epoch dirs; the statistics are always
+    # snapshotted once at the run root (`<exp_cwd>/normalizers/`) right after `update_normalizer`.
+    save_normalizer_every_epoch: false
+  # RLRP-824 (FR7): resume an interrupted run. Options: null (fresh run, default) or a path to an
+  # `epoch_checkpoints/epoch_<E>/` dir or to a run root (its LATEST epoch checkpoint is used).
+  # Restores the weights (+ optimizer state when persisted via `checkpoint.include_optimizer`), the
+  # run-root `normalizers/` snapshot and the `data_split_record.json` train/val split
+  # (`pipeline.data_manager: dataloader`), skips the ERLL passes already completed and continues the
+  # global epoch counter from E. Requires explicit integer pass budgets (same rule as `force_interval`).
+  #
+  # RLRP-839: the path may ALSO be a multirun dir or ANY ancestor (date dir / experiment dir). The
+  # launcher then SCANS it for job dirs (`.hydra/overrides.yaml`), validates each candidate against
+  # the current launch (non-`trial_nb` overrides + `hydra.runtime.choices` must be equal, fail fast
+  # otherwise), audits its progress and resumes each one where it stopped, sequentially:
+  #   train    => latest epoch checkpoint < planned budget (or no primary model): ERLL resume as above;
+  #   deploy   => training complete but `testtime_rollouts/` and/or `epoch_checkpoints_rollouts/
+  #               epoch_<E>/` incomplete: skip training, load `model_<ClassName>/`, complete ONLY the
+  #               missing/partial rollouts IN PLACE under the original run root;
+  #   complete => nothing to do (skipped); fresh => nothing on disk (skipped with a warning).
+  # Scan mode must run as a SINGLE driver job (`--multirun trial_nb=1`); it is non-interactive
+  # (SLURM-safe) and fails fast with an explicit message on any illegal candidate. Example:
+  #   python3 launcher/math_env_main.py --config-name=<multirun cfg> --config-dir=<its dir> \
+  #     --multirun trial_nb=1 training_common.resume_from_checkpoint=artifact/<exp>/<model>/<date>
+  # NOTE (SLURM jobs 3532787/3532791): `--multirun` must precede EVERY `key=value` override (Hydra's
+  # argparse rejects a trailing `--multirun trial_nb=1` as "unrecognized arguments") and `trial_nb=1`
+  # is mandatory when the multirun cfg sweeps `trial_nb` (otherwise jobs #1..N-1 are refused by the
+  # duplicate-work guard while job #0 alone completes every candidate).
+  resume_from_checkpoint: null
+  resume:
+    # Narrow the scanned candidates: substring (e.g. "041610795583") or glob on the run root path.
+    candidate_filter: null
+    # true => print the audited candidate table (path, latest ckpt, planned total, main deploy,
+    # missing epoch rollouts, stage) and exit without training / deploying anything.
+    dry_run: false
+
+# ....DN-project directories.............
+project_root_path: ${oc.env:DN_PROJECT_PATH,../MTM-Pro}
+# Note: fetch environment variable via omegaconf resolver `${oc.env:<env-var>, <default-value>}`
+#  See doc https://omegaconf.readthedocs.io/en/2.3_branch/custom_resolvers.html#oc-env
+exp_root_dir: "artifact"
+project_experiment_root_path: ${project_root_path}/${exp_root_dir}
+project_src_root_path: ${project_root_path}/src
+project_config_root_path: ${project_root_path}/src/launcher/configs
+pipeline_prepend_dir: ${oc.select:pipeline.pipeline_prepend_dir,""}
+orig_cwd: ???
+unittest_cwd: null
+
+
+# ....Hydra configuration................
+hydra:
+
+  # (Priority) ToDo: validate (ref task RLRP-456)
+  # verbose: true
+  job_logging:
+    level: DEBUG
+
+  callbacks:
+    R2S2R_callback:
+      _target_: tools.hydra_apps_tools.r2s2r_apps_utils.R2S2RConsoleHydraCallback
+    Startup_info_callback:
+      _target_: tools.hydra_apps_tools.r2s2r_apps_utils.R2S2RHydraStartupInfoCallback
+
+  job:
+    chdir: true # Keep pre hydra 1.2 behaviour
+
+  run:
+    dir: ${project_experiment_root_path}/${algorithm.name}/${experiment}/${pipeline_prepend_dir}${now:%Y.%m.%d}/${now:%H%M%S}
+
+  sweep:
+    # Ref https://hydra.cc/docs/1.3/configure_hydra/workdir/#configuration-for-multirun
+    dir: ${project_experiment_root_path}/${algorithm.name}/${experiment}/${pipeline_prepend_dir}${now:%Y.%m.%d}/${now:%H%M%S%f}
+    subdir: ${hydra.job.override_dirname}
+
+# ....Autofill............................
+host_user:
+  name: ${oc.env:DN_PROJECT_USER,${oc.env:USER,unkown}}
+  home: ${oc.env:HOME}
+
+python_version: ${python_version:micro}
+device: ???
+
+IDE:
+  pycharm: ???
+  ide_remote_run: ???

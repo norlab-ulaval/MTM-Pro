@@ -1,0 +1,175 @@
+#
+# Hydra launch command:
+#   $ python3 launcher/math_env_main.py --config-name=math_env_main_exp_RLRP-757-E4B-low-global-noise --config-dir=launcher/configs/main_experiments/math_env/ICRA2026
+#
+
+defaults:
+  - /global_config
+  # ....pipeline.....................................
+  - /pipeline: math_env_full_pipeline
+  # ....simulation mode..............................
+  - /simulation_mode: single_agent_flatten_human # alt: single_agent_flatten_headless
+  # ....algorithm....................................
+  - /algorithm/experience_replay@UDER: PBER_lr_warmup_disabled
+  # ....Environment and Data.........................
+  - /simulator@environment: lorenz_v6_5XinitC_low_global_noise
+  - _self_
+
+# ====Experiment===================================
+algorithm:
+  name: 'ICRA2026'
+
+experiment_super: "RLRP-757-Lorenz-E4B-low-global-noise"  # <-- Set to 'default' otherwise
+
+comment: "ICRA 2026 experiment on our adverse Lorenz attractor environment configuration
+RLRP-757 experiment: Lorenz (full).
+Based on math_env_main_exp_RLRP-591.yaml"
+
+deploy:
+  val_rollout:
+    # Rollout performed from validation trajectories
+    # Full neurobem adverse train+val=381107
+    replay_buffer_ratio: 0.1
+    trajectory_length_ratio: 0.35
+  target_experiment:
+    tutor_and_release: true
+    ground_truth_feed_warmup_steps: 200
+    compounded_predictions_score: true # Only affect tensorboard callback + ERLL algo deploy stage
+  model_runtime:
+    next_state_deterministic_selection: true # ⚠️
+    next_state_sampling_size: 1 # if next_state is probabilistic
+
+  # RLRP-773: opt-in per-epoch-checkpoint test-time rollouts (requires
+  # `training_common.force_checkpoint_interval` set on the training run that produced the
+  # `epoch_checkpoints/` tree). Default OFF => legacy single deploy, zero extra cost.
+  epoch_checkpoint_rollouts:
+    enable: true      # Options: bool. Run test-time rollouts for each epoch checkpoint  # <--
+    epoch_stride: null # Options: int >= 1 or null => every discovered checkpoint
+    epochs: null       # Options: list[int] or null => no explicit subset (last epoch always kept)
+
+
+# ====Environment and Data=========================
+environment:
+  env_rnd_instances: 1 # ⚠️  Nb time to resample a environment configuration
+
+  # (NICE TO HAVE) ToDo: refactor out to a math env global cfg file
+  deploy_rollout_post_processing:
+    _target_: pipeline.pipeline_utils.math_env_pipeline_utils.train_and_deploy_utils.MathEnvDeployRolloutPostprocessing
+    device: ${device}
+
+source_replay_buffer:
+  source_size: all # Options: int or all i.e., all samples from offline source
+  val_ratio: 0.1
+  original_dataset_size: ???
+
+# ====Algorithm====================================
+# Note: use "UDER" key to simplify experiment even if using "PBER" as algo ★
+UDER: # Overrides
+  batch_size: # See 'notebooks/uder_related.ipynb'
+    init_value: 300
+    gamma: 1.3 # For 512->1064 in 4 epochs
+    limit: 300
+  # uder_num_epoch_init_override: 5 # int, false => skip override, null => 'patience'
+  # # ↳ Warmup: Set init nb epoch to give multi-task weighting time to stabilize
+  uder_num_epochs: 8
+  num_epochs_train_model: 800
+  final_max_num_epochs_train_model: 200 # Options: int or null => patience threshold
+  uder_lr_schedule:
+    exp_decreassing: 0.5
+
+
+# ====Training=====================================
+training_common:
+  # RLRP-773: checkpoint knobs aggregated under the `checkpoint` group.
+  checkpoint:
+    performance_measure: val_loss # Options: val_loss, testtime_rollout_mae, testtime_rollout_l2norm ⚠️
+    # epoch-interval persistent checkpointing cadence (global completed inner epochs).
+    # Options: int >= 1 or null => OFF/legacy. When set, every ERLL pass epoch budget MUST be an
+    # explicit int (a null/patience-driven budget raises) and early-stopping is disabled.
+    force_interval: 100 # <--
+    include_optimizer: latest # RLRP-773: also persist the optimizer state_dict in each epoch checkpoint
+  optimizer:
+    use_adam: false
+    # A8 (RLRP-783 follow-up): source the fused (CUDA) Adam opt-in from the selected pipeline
+    # group (`pipeline.optimizer.adam_fused`); the multirun/HPO/deploy/pipeline configs set it
+    # true. Absent/other pipelines => false (legacy). Threaded into the AdamW branch by
+    # `change_optimizer` (`perf_RLRP-783_mtm_pro_models_code_optimization_plan_20260827.md`).
+    adam_fused: ${oc.select:pipeline.optimizer.adam_fused,false}
+    AdamW:
+      amsgrad: false # ★
+  trainer_lr_schedule: # ToDo: experiment
+    warmup: null
+    # warmup:
+    #   steps: 10 # Maintain initial model_lr for <step> warmup epochs (0 to disable)
+    #   factor: 1.0 # Default: 1.0
+    # cosine_annealing_lr:
+    #   T_max: null # T_max will be set to per UDER epoch pass
+    #   # eta_min: 1e-8 # Default: 0
+    cosine_annealing_lr: null
+    exponential_lr:
+      # gamma: 0.888
+      gamma: 0.97
+      # RLRP-770 (option 3): opt-in auto-`gamma`. When `end_fraction` (0, 1) is set, `gamma` is
+      # IGNORED and derived per UDER pass as `end_fraction ** (1/(pass_num_epochs-1))` so the LR
+      # always lands on `end_fraction` of the pass restart height (removes the fixed-`gamma`
+      # frozen tail on long passes). Under Law-U the pass budget is auto-sized (RLRP-727 B2).
+      # end_fraction: 0.05
+  # AdamW paired recommended default: lr=5e-4, wd ∈ {5e-2, 1e-2, 1e-3}
+  model_lr: 1e-3
+  # model_lr: 5e-4
+  # model_lr: 1e-4
+  # model_wd: 5e-2
+  model_wd: 1e-3
+  # model_wd: 1e-4
+  patience: 50 # Early stopping Options: int or null (need to be greater than num_epochs_train_model/uder_num_epochs otherwise any uder_num_epochs can be cut short) ⚠️
+  improvement_threshold: 0.00000001 # Affect model saving & early stopping (Default 0.01)
+
+ss_training: ${training_common}
+ms_training: ${training_common}
+
+
+# ====Single-Step model============================
+one_dim_transition_model:
+  _target_: tools.mbrl_lib_tools.models.one_dim_tr_model_v2.OneDTransitionRewardModelV2
+  normalize: true # <--
+  normalizer_type: standard_symmetric # Options: standard, standard_symmetric, winsorized, quantile
+  allow_contract_drop: false # <--
+  normalize_double_precision: false  # bool | null->Auto-detected from model precision
+  num_elites: null
+
+feature_loss_weights:
+  # ....The criterion..............................................................
+  # A named criterion, a scalar, or an explicit per-dim list.
+  #   predictability   -> w ~ (sigma_delta / sigma_noise_floor)**2. RECOMMENDED:
+  #                       de-emphasises NOMINAL vibration while keeping the rare
+  #                       adverse excursions fully salient.
+  #   state_equivalent -> w ~ sigma_state**2. The raw-space CONTROL: it makes a
+  #                       symmetric target reproduce the per-feature budget the
+  #                       raw-target `standard` path implicitly uses.
+  #   raw_equivalent   -> w ~ sigma_delta**2, i.e. innovation energy. NOTE
+  #                       (RLRP-761 S8.4f) this is NOT the raw-space control it was
+  #                       once documented to be -- that needs sigma_state**2.
+  #   uniform          -> the scalar 1.0 (explicit opt-out, weighting path OFF).
+  obs_feature_weights: uniform
+  # An UNSET act block inherits the obs criterion (S7.3): the two are concatenated
+  # and normalized jointly, so leaving it at 1.0 is NOT neutral. `uniform` opts out.
+  act_feature_weights: uniform
+  # ....The semantic...............................................................
+  # `multiplicative` -> `w_d * NLL_d`, which actually re-allocates the gradient.
+  # `tempered`       -> `NLL_d + log w_d`, an ADDITIVE CONSTANT on an NLL, hence
+  #                     GRADIENT-INERT (blocker B1). Pairing it with a named
+  #                     criterion is REFUSED, since it yields a null result that
+  #                     looks like a measurement.
+  feature_weight_mode: multiplicative
+
+
+# ====Multi-Step model=============================
+
+ms_model: # <- OVERRIDES
+
+  # ....Auto set......................................
+  singlestep_obs_len: ${environment.obs_shape[0]} # quickhack
+  singlestep_act_len: ${environment.act_shape[0]} # quickhack
+  in_size: ???
+  out_size: ???
+  device: ${device}

@@ -1,0 +1,179 @@
+# /////////////////////////////////////////////////////////////////////////////////////////////////
+#
+#                          Husky Gravel And Grass Full Dataset (Online)
+#
+# Total train_val_trajectories trajectory length: 38413
+#
+# test_InD_trajectory length:
+#    0: 231
+#    1: 982
+#    2: 444
+#    3: 336
+#    4: 396
+#    5: 152
+#    6: 812
+#    7: 197
+#    8: 287
+#    9: 181
+#    10: 351
+#
+# Total test_InD_trajectory trajectory length: 4369
+#
+# Total test_OOD_trajectory trajectory length: 0
+#
+# /////////////////////////////////////////////////////////////////////////////////////////////////
+name: "husky_gravel_and_grass_full_dataset_online"
+
+defaults:
+  - ugv_general
+  - /simulator/softwinsorization@normalizer: husky_adverse_default
+  - _self_
+
+dataset_name: husky_adverse
+data_path: data/external_data/ugv/husky_dataset_src/pre_processed_post_rlrp-780/sets/online
+
+obs_are_dt_derivatives: true
+obs_time_is_delta_time: true
+
+
+data:
+  label: "Husky gravel and grass (full dataset, online)"
+  # RLRP-758: husky linear velocity is genuinely world-frame (ICP odometry),
+  # angular velocity is genuinely body/base_link (IMU). (CRITICAL)
+  linear_velocity_frame: world # (CRITICAL)
+  angular_velocity_frame: body # (CRITICAL)
+  trajectories:
+    # ....From the train directory...........................
+    - trajectory_name:  train/drive_grass_grand_axe__1__geofence_creation_state
+    - trajectory_name:  train/drive_grass_grand_axe__2__ready_state
+    - trajectory_name:  train/drive_grass_grand_axe__3__running_state
+    - trajectory_name:  train/drive_grass_grand_axe__4__back_to_geofence_state
+    - trajectory_name:  train/drive_grass_grand_axe__5__running_state
+    - trajectory_name:  train/drive_grass_grand_axe__6__back_to_geofence_state
+    - trajectory_name:  train/drive_grass_grand_axe__7__running_state
+    - trajectory_name:  train/drive_grass_grand_axe__8__back_to_geofence_state
+    - trajectory_name:  train/drive_grass_grand_axe__11__running_state
+    - trajectory_name:  train/drive_grass_grand_axe__12__back_to_geofence_state
+    - trajectory_name:  train/drive_grass_grand_axe__13__running_state
+    - trajectory_name:  train/drive_grass_grand_axe__14__back_to_geofence_state
+    - trajectory_name:  train/drive_grass_grand_axe__15__running_state
+    - trajectory_name:  train/drive_grass_grand_axe__16__back_to_geofence_state
+    - trajectory_name:  train/drive_grass_grand_axe__17__running_state
+    - trajectory_name:  train/drive_grass_grand_axe__18__running_state
+    - trajectory_name:  train/drive_grass_grand_axe__24__ready_state
+    - trajectory_name:  train/drive_gravel_pit_casault__1__geofence_creation_state
+    - trajectory_name:  train/drive_gravel_pit_casault__4__back_to_geofence_state
+    - trajectory_name:  train/drive_gravel_pit_casault__5__running_state
+    - trajectory_name:  train/drive_gravel_pit_casault__6__back_to_geofence_state
+    - trajectory_name:  train/drive_gravel_pit_casault__7__back_to_geofence_state
+    - trajectory_name:  train/drive_gravel_pit_casault__8__running_state
+    - trajectory_name:  train/drive_gravel_pit_casault__9__back_to_geofence_state
+    - trajectory_name:  train/drive_gravel_pit_casault__10__running_state
+    - trajectory_name:  train/drive_gravel_pit_casault__11__back_to_geofence_state
+    - trajectory_name:  train/drive_gravel_pit_casault__12__running_state
+    - trajectory_name:  train/drive_gravel_pit_casault__13__back_to_geofence_state
+    - trajectory_name:  train/drive_gravel_pit_casault__14__running_state
+    - trajectory_name:  train/drive_gravel_pit_casault__15__back_to_geofence_state
+    - trajectory_name:  train/drive_gravel_pit_casault__16__running_state
+    - trajectory_name:  train/drive_gravel_pit_casault__17__back_to_geofence_state
+    - trajectory_name:  train/drive_gravel_pit_casault__18__running_state
+    - trajectory_name:  train/drive_gravel_pit_casault__19__back_to_geofence_state
+    - trajectory_name:  train/drive_gravel_pit_casault__20__running_state
+    - trajectory_name:  train/drive_gravel_pit_casault__21__back_to_geofence_state
+    - trajectory_name:  train/drive_gravel_pit_casault__22__running_state
+    - trajectory_name:  train/drive_gravel_pit_casault__23__back_to_geofence_state
+    - trajectory_name:  train/drive_gravel_pit_casault__24__running_state
+    - trajectory_name:  train/drive_gravel_pit_casault__25__back_to_geofence_state
+    - trajectory_name:  train/drive_gravel_pit_casault__26__running_state
+    - trajectory_name:  train/drive_gravel_pit_casault__27__back_to_geofence_state
+    - trajectory_name:  train/drive_gravel_pit_casault__51__ready_state
+    - trajectory_name:  train/grass_1__1__geofence_creation_state
+    - trajectory_name:  train/grass_1__2__ready_state
+    - trajectory_name:  train/grass_1__3__running_state
+    - trajectory_name:  train/grass_1__4__running_state
+    - trajectory_name:  train/grass_1__5__back_to_geofence_state
+    - trajectory_name:  train/grass_1__6__running_state
+    - trajectory_name:  train/grass_1__7__back_to_geofence_state
+    - trajectory_name:  train/grass_1__11__back_to_geofence_state
+    - trajectory_name:  train/grass_1__12__running_state
+    - trajectory_name:  train/grass_1__13__back_to_geofence_state
+    - trajectory_name:  train/grass_1__14__running_state
+    - trajectory_name:  train/grass_1__15__running_state
+    - trajectory_name:  train/grass_1__16__back_to_geofence_state
+    - trajectory_name:  train/grass_1__17__running_state
+    - trajectory_name:  train/grass_1__18__back_to_geofence_state
+    - trajectory_name:  train/grass_1__19__running_state
+    - trajectory_name:  train/grass_1__20__back_to_geofence_state
+    - trajectory_name:  train/grass_1__54__ready_state
+    - trajectory_name:  train/grass_2__1__geofence_creation_state
+    - trajectory_name:  train/grass_2__2__ready_state
+    - trajectory_name:  train/grass_2__3__running_state
+    - trajectory_name:  train/grass_2__4__running_state
+    - trajectory_name:  train/grass_2__5__back_to_geofence_state
+    - trajectory_name:  train/grass_2__6__running_state
+    - trajectory_name:  train/grass_2__7__back_to_geofence_state
+    - trajectory_name:  train/grass_2__8__running_state
+    - trajectory_name:  train/grass_2__9__running_state
+    - trajectory_name:  train/grass_2__10__running_state
+    - trajectory_name:  train/grass_2__11__back_to_geofence_state
+    - trajectory_name:  train/grass_2__12__running_state
+    - trajectory_name:  train/grass_2__13__back_to_geofence_state
+    - trajectory_name:  train/grass_2__14__running_state
+    - trajectory_name:  train/grass_2__15__back_to_geofence_state
+    - trajectory_name:  train/grass_2__16__running_state
+    - trajectory_name:  train/grass_2__17__back_to_geofence_state
+    - trajectory_name:  train/grass_2__18__running_state
+    - trajectory_name:  train/grass_2__19__back_to_geofence_state
+    - trajectory_name:  train/grass_2__20__running_state
+    - trajectory_name:  train/grass_2__21__running_state
+    - trajectory_name:  train/grass_2__22__running_state
+    - trajectory_name:  train/grass_2__23__running_state
+    - trajectory_name:  train/grass_2__24__running_state
+    - trajectory_name:  train/grass_2__25__running_state
+    - trajectory_name:  train/grass_2__99__ready_state
+    - trajectory_name:  train/grass_3__1__geofence_creation_state
+    - trajectory_name:  train/grass_3__2__ready_state
+    - trajectory_name:  train/grass_3__3__running_state
+    - trajectory_name:  train/grass_3__4__back_to_geofence_state
+    - trajectory_name:  train/grass_3__5__running_state
+    - trajectory_name:  train/grass_3__6__back_to_geofence_state
+    - trajectory_name:  train/grass_3__7__running_state
+    - trajectory_name:  train/grass_3__8__back_to_geofence_state
+    - trajectory_name:  train/grass_3__9__running_state
+    - trajectory_name:  train/grass_3__10__back_to_geofence_state
+    - trajectory_name:  train/grass_3__11__running_state
+    - trajectory_name:  train/grass_3__12__back_to_geofence_state
+    - trajectory_name:  train/grass_3__13__running_state
+    - trajectory_name:  train/grass_3__19__ready_state
+
+  test_InD_trajectory:
+    - trajectory_name: nominal_test_set/drive_grass_grand_axe__10__back_to_geofence_state
+      category: S
+    - trajectory_name: nominal_test_set/drive_grass_grand_axe__9__running_state
+      category: L
+    - trajectory_name: nominal_test_set/drive_gravel_pit_casault__2__ready_state
+      category: M
+    - trajectory_name: nominal_test_set/drive_gravel_pit_casault__3__running_state
+      category: M
+    - trajectory_name: nominal_test_set/grass_1__8__running_state
+      category: M
+    - trajectory_name: nominal_test_set/grass_1__9__back_to_geofence_state
+      category: S
+    - trajectory_name: nominal_test_set/grass_1__10__running_state
+      category: L
+    - trajectory_name: nominal_test_set/grass_2__26__back_to_geofence_state
+      category: S
+    - trajectory_name: nominal_test_set/grass_2__27__running_state
+      category: S
+    - trajectory_name: nominal_test_set/grass_2__28__back_to_geofence_state
+      category: S
+    - trajectory_name: nominal_test_set/grass_2__29__running_state
+      category: M
+
+  test_OOD_trajectory: null
+
+# global_interval_idx: [0, 10001]
+time_space:
+  bound: ???
+  granularity: ???
+# explorable_space: [[0, 8001]] # Not used in robotic env for now

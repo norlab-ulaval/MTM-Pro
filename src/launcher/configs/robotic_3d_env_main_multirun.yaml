@@ -1,0 +1,37 @@
+# Procedure:
+#   1. Select specialized multirun cfg
+#   2. Execute: python3 launcher/robotic_3d_env_main_multirun.py
+#
+# This cfg file is equivalent to running the following:
+#
+#   $ python3 launcher/robotic_3d_env_main_multirun.py
+#       --config-name=robotic_3d_env_main_exp_RLRP-542
+#       --config-dir=main_experiments/robotic_3d_env
+#       +multirun_overrides/robotic_3d_env@_global_=robotic_3d_env_main_multirun_ar_temporal_mixture_pme
+#       simulation_mode=single_agent_flatten_headless
+#
+# For debuging, add: +dev@_global_=robotic_3d_env_larger_debug
+
+defaults:
+  - /robotic_3d_env_main_default
+  # - /main_experiments/robotic_3d_env@_global_: robotic_3d_env_long_horizon_predictions_baseline_paper
+  # - /main_experiments/robotic_3d_env@_global_: robotic_3d_env_main_exp_RLRP-526 # ★★★ 1/4 NB
+  # - /main_experiments/robotic_3d_env@_global_: robotic_3d_env_main_exp_RLRP-539 # ★★★ Half NB
+  # - /main_experiments/robotic_3d_env@_global_: robotic_3d_env_main_DEV # ★★★
+  # - /main_experiments/robotic_3d_env@_global_: robotic_3d_env_main_exp_RLRP-542 # ★★★ real 1/4 NB
+  # - /main_experiments/robotic_3d_env@_global_: robotic_3d_env_main_exp_RLRP-540 # ★★★ Full NB
+  # ....multirun default.............................
+  - /multirun_base
+  # ....Multirun cfg........................................
+  # - /multirun_overrides/robotic_3d_env@_global_: robotic_3d_env_main_multirun_default
+  # - /multirun_overrides/robotic_3d_env@_global_: robotic_3d_env_main_multirun_ar_baselines
+  # - /multirun_overrides/robotic_3d_env@_global_: robotic_3d_env_main_multirun_dual_head
+  - /multirun_overrides/robotic_3d_env@_global_: robotic_3d_env_main_multirun_ar_temporal_mixture_pme
+  # ....simulation mode..............................
+  - override /simulation_mode: single_agent_flatten_headless # alt: single_agent_flatten_human
+  # ....pipeline.....................................
+  # - override /pipeline: robotic_3d_env_full_pipeline
+  - override /pipeline: robotic_3d_env_full_pipeline_multirun
+  - _self_
+
+

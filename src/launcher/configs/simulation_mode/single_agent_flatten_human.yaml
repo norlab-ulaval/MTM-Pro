@@ -1,0 +1,3 @@
+rendering: 'human'
+
+flatten_obs: true

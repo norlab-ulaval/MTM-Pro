@@ -1,0 +1,204 @@
+
+name: "multirun_testtime_rollout_plot_pipeline"
+
+plot:
+  show_plot: true
+  # Default figure size [width, height] (in inches) for EVERY graphic of this
+  # render type. Any graphic type can personalize its own size from its
+  # `show.<graphic_type>` config group with the `width_screen` / `height_screen`
+  # keys (this render type) or `width_latex` / `height_latex` (the
+  # `plot_latex_includegraphics` render type below), e.g.
+  #
+  #   show:
+  #     generate_drift_rate_plot:
+  #       width_screen: 35                    # arbitrary number (inches)
+  #       height_screen: 14
+  #       width_latex: double_column_width    # preset name (see below)
+  #       height_latex: 1.4
+  #       # width_latex: double_column_width * 0.5  # scaled preset
+  #
+  # An omitted key falls back to the `figsize` value of the active render type.
+  figsize: [35,14]
+  # Named figure-size presets usable by the `show.<graphic_type>.width_*` /
+  # `height_*` keys (any scalar key declared under `figsize_preset` here or in
+  # the `plot_latex_includegraphics` group below is resolvable as a preset).
+  figsize_preset:
+    full_page_width: 35
+  figdpi: 100 # matplotlib default is dpi=100
+  save_dpi: 100 # matplotlib default is dpi=100
+
+  style: # manualy_wired_style
+    # plot_linewidth: 3.5
+    plot_linewidth: 4.2
+    # fill_between_alpha: 0.07
+    # fill_between_alpha: 0.12
+    fill_between_alpha: 0.15
+    # Solid, opaque band-boundary line width (RLRP-807). 0.0 -> no boundary
+    # lines (legacy look); a small positive value (e.g. 0.6) draws crisp
+    # group-colored edges so overlapping dispersion bands stay readable.
+    fill_between_linewidth: 0.5
+    sem_alpha: 0.15
+    # Metric (y) axis tick label notation for the drift-rate plot.
+    # True  -> power-of-ten / scientific notation (e.g. 10^-3, 1e-05).
+    # False -> plain decimal notation (e.g. 0.001) while keeping log-scale
+    #          tick positions unchanged.
+    yaxis_tick_scientific_notation: True
+    # Finetune the padding distance (in typographic points) between the
+    # primary "Time-steps" x-axis label and the "timestamps" caption/arrow
+    # band drawn by ``_attach_timestamp_secondary_xaxis``. Positive -> push the
+    # band further from the xlabel; negative -> bring it closer. 0.0 -> legacy
+    # placement (no shift).
+    timestamp_arrow_pad: 0.0
+    # Color of the below-axis timestamps band (arrow line + tip, numeric
+    # timestamp ticks, unit label and the "timestamps" caption) drawn by
+    # ``_attach_timestamp_secondary_xaxis``. Accepts any matplotlib color spec.
+    timestamps_arrow_color: dimgray
+
+  rcParams_update:
+    # Ref https://matplotlib.org/stable/users/explain/customizing.html
+    font.weight: normal
+    font.size: 18 # in point (plt default 10)
+    font.style: normal # italic
+    font.family: sans-serif
+    figure.titlesize:   large     # size of the figure title (``Figure.suptitle()``)
+    figure.titleweight: normal    # weight of the figure title
+    figure.labelsize:   large     # size of the figure label (``Figure.sup[x|y]label()``)
+    figure.labelweight: normal    # weight of the figure label
+    # axes.labelsize: 24
+    axes.labelweight: bold
+
+    figure.constrained_layout.use: true
+    ## Padding (in inches) around axes; defaults to 3/72 inches, i.e. 3 points.
+    figure.constrained_layout.h_pad:  0.25
+    figure.constrained_layout.w_pad:  0.25
+
+    legend.framealpha: 0.85
+
+  print_title: true
+  print_legend: true
+  print_axis_label: true
+  print_axis_tick: true
+  print_meta_info: true
+
+plot_latex_includegraphics:
+  show_plot: true
+  # Named figure-size presets usable by the `show.<graphic_type>.width_latex` /
+  # `height_latex` keys (e.g. `width_latex: single_column_width`), optionally
+  # scaled (e.g. `width_latex: double_column_width * 0.5`).
+  figsize_preset:
+    single_column_width: 2.4571811 # ICRA single column width
+    double_column_width: 5.0589 # ICRA double column width
+  # Default figure size [width, height] (in inches) for EVERY graphic of this
+  # render type; overridable per graphic type with
+  # `show.<graphic_type>.width_latex` / `height_latex` (arbitrary number, preset
+  # name or scaled preset). See the `plot.figsize` comment above for more example.
+  #   show:
+  #     generate_drift_rate_plot:
+  #       width_latex: double_column_width    # preset name (see below)
+  #       height_latex: 1.4
+  #       # width_latex: double_column_width * 0.5  # scaled preset
+  #
+  # An omitted key falls back to the `figsize` value of the active render type.
+  figsize:
+    # target_linewidth * inches_per_pt
+    # with inches_per_pt = 1.0 / 72.27 (TeX points -> inch)
+    # and target_linewidth from latex output with `\the\linewidth` in pt
+    # - 397.48499 * 0.01383700014 = 5.4999998623
+    # - 5.0589 # ICRA double column width
+    - 2.4571811 # ICRA single column width
+    # - 2
+    - 1.3
+    # - 1.35
+    # - 1.25
+    # - 10
+    # - 14
+  figdpi: 300 # matplotlib default is dpi=100
+  save_dpi: 100 # matplotlib default is dpi=100
+  latex_save_dpi: 600 # matplotlib default is dpi=100
+
+  style:
+    plot_linewidth: 0.95
+    fill_between_alpha: 0.2
+    # Solid band-boundary line width (RLRP-807); 0.0 -> no boundary lines.
+    fill_between_linewidth: 0.2
+    sem_alpha: 0.15
+    # Metric (y) axis tick label notation for the drift-rate plot.
+    # true  -> power-of-ten / scientific notation (e.g. 10^-3, 1e-05).
+    # false -> plain decimal notation (e.g. 0.001) while keeping log-scale
+    #          tick positions unchanged.
+    yaxis_tick_scientific_notation: false
+    # Finetune the padding distance (in typographic points) between the
+    # primary "Time-steps" x-axis label and the "timestamps" caption/arrow
+    # band drawn by ``_attach_timestamp_secondary_xaxis``. Positive -> push the
+    # band further from the xlabel; negative -> bring it closer. 0.0 -> legacy
+    # placement (no shift).
+    timestamp_arrow_pad: -6.0
+    # Color of the below-axis timestamps band (arrow line + tip, numeric
+    # timestamp ticks, unit label and the "timestamps" caption) drawn by
+    # ``_attach_timestamp_secondary_xaxis``. Accepts any matplotlib color spec.
+    timestamps_arrow_color: dimgray
+
+  rcParams_update:
+    # Ref https://matplotlib.org/stable/users/explain/customizing.html
+    font.size: 5
+    font.weight: normal
+    # figure.labelsize: 18     # size of the figure label (``Figure.sup[x|y]label()``)
+    # figure.labelweight: normal    # weight of the figure label
+    axes.labelsize: 4.5
+    axes.labelpad:  2.0     # space between label and axis
+    axes.labelweight: bold
+    # ytick.major.size: 3
+    ytick.labelsize: 5
+    xtick.major.size: 3
+    xtick.labelsize: 5
+    # xtick.major.pad: 9
+    # grid.color: "0.15"
+    grid.color: gray
+    grid.alpha: 0.5
+    # grid.linestyle: '-'
+    # grid.linewidth: 5
+
+    # The three standard dash patterns.  These are scaled by the linewidth.
+    lines.dashed_pattern: [3.7, 1.6]
+    lines.dashdot_pattern: [6.4, 1.6, 1, 1.6]
+    lines.dotted_pattern: [1, 1.65]
+    lines.scale_dashes: true
+
+    # Scientific Notation Enabled
+    # axes.formatter.use_mathtext: True  # When True, use mathtext for scientific notation.
+    # axes.formatter.limits: -5, 3  # use scientific notation if log10 of the axis range is smaller
+    #                               # than the first or larger than the second
+    # axes.formatter.min_exponent: 0  # minimum exponent to format in scientific notation
+    # axes.formatter.useoffset: True  # If True, the tick label formatter will default to labeling
+    #                                 # ticks relative to an offset when the data range is small
+    #                                 # compared to the minimum absolute value of the data.
+    # axes.formatter.offset_threshold: 4  # When useoffset is True, the offset will be used when it
+    #                                     # can remove at least this number of significant digits
+    #                                     # from tick labels.
+
+    # Scientific Notation Disabled
+    axes.formatter.limits: -10, 10   # effectively never use sci-notation
+    axes.formatter.useoffset: false  # no "1e-2"-style offset label
+
+
+    axes.linewidth: 0.3     # plot box line width
+    patch.linewidth: 0.3    # legend frame (and other patches)
+
+    legend.framealpha: 0.85
+
+    figure.constrained_layout.use: true
+    ## Padding (in inches) around axes; defaults to 3/72 inches, i.e. 3 points.
+    figure.constrained_layout.h_pad: 0.0011
+    figure.constrained_layout.w_pad: 0.0011
+
+    savefig.format: png         # {png, ps, pdf, svg}
+    savefig.bbox:   tight    # {tight, standard}
+    savefig.pad_inches:  0.005       # padding to be used, when bbox is set to 'tight'
+
+  print_title: false
+  print_legend: true # <--
+  # print_legend: false # <--
+  print_axis_label: true
+  print_meta_info: false
+  print_axis_tick: true
+

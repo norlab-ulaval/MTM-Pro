@@ -1,0 +1,471 @@
+
+# ====Model type: Multistep===========
+
+_target_: tools.multistep_tools.models.MS2MS2SSArTemporalMixtureSamplingFreePME
+description: "Weighted multistep auto-regressive temporal mixture PME (Distributional MTM-Pro)"
+
+ensemble_size: 5 # ★★★ Require ensemble_size > 1
+propagation_method: expectation # ★★★
+learn_logvar_bounds: true # ★★★
+# Optional per-experiment element-wise gradient clip on the learnable logvar-bound parameters
+# (logvar_min/logvar_max). null -> disabled (default, no behaviour change). Set to a positive
+# float (e.g. 1.0) to tame the large bound-parameter gradients that can appear when the bounds
+# sit in the probabilistic multi-step NLL graph (MS+SS). Only active when learn_logvar_bounds: true.
+# Ref on logvar_bound_grad_clip: .junie/ai_artifact/reports/report_logvar_bound_grad_clip_tuning_20260622.md
+logvar_bound_grad_clip: null
+
+mae_loss: true
+distribution_name: laplace # ★
+
+enable_auto_loss_weighting: true
+# Composite (multitask) auto-weighting (Kendall uncertainty weighting) knobs. See the .junie plan
+# refactor_composite_loss_auto_weighting_and_shifted_softplus_plan_20260623.md (ref RLRP-720).
+#   auto_weighting_noise_model: weighting task-noise model -- "gaussian" (default) | "laplace".
+#                               INDEPENDENT from distribution_name (the predictive head).
+#   auto_weighting_scheme: "tempered_likelihood" (default; proper power-likelihood, eq. 10; drops
+#                          the shifted_softplus lift, valid for negative NLL) |
+#                          "shifted_softplus_heuristic" (Phi(NLL) lift, eq. 5).
+auto_weighting_noise_model: gaussian
+auto_weighting_scheme: tempered_likelihood
+# Single-step (SS) composite loss term (formerly `ss_composite_loss_weight`, where 0.0 == disabled).
+# Now an explicit on/off switch with its own static weight + auto-weighting toggle.
+single_step_loss:
+  enable: false # <-- (legacy 0.0-weight default == disabled)
+  loss_weight: 1.0 # Static SS weight (applied with AND without auto-weighting)
+  auto_weighting: true # route the (enabled) SS term through the composite auto-weighting ("SS" slot)
+
+ms_composite_loss_weight: 1.0
+
+# temporal_weights:
+#   - 0.99
+#   - 0.9
+#   - 0.85
+#   - 0.8
+#   - 0.7
+temporal_weights: 0.96 # ★★ HPO
+# `ms_temporal_weighting_mode` (RLRP-769): HOW the MS-head temporal discount w_j=gamma^j enters the
+# per-step NLL + the matching horizon scale (does NOT affect the AR/CP `ar_temporal_weights`). Options:
+#   log-shift    -> nll_j + log w_j (legacy, former default; gamma gradient-inert, magnitude ~ horizon_len)
+#   tempered     -> w_j*nll_j, sum_j w_j=1 (convex combo; gamma effective; horizon-scale invariant)
+#   discounted-sum -> gamma^j*nll_j (raw EMA, w_0=1; gamma effective; magnitude ~ 1/(1-gamma)) [DEFAULT]
+#   joint        -> sum_j nll_j (exact independent joint NLL; undiscounted)
+#   uniform-mean -> (1/horizon_len) sum_j nll_j (discount ablated; scale fixed)
+ms_temporal_weighting_mode: discounted-sum
+
+# ... Mixture loss objectives (grouped, Stage G/B/H/I; RLRP-704) ..........
+# Primary multi-step probabilistic loss collapse mode:
+#   true_mixture   -> exact per-step mixture NLL (default, preserves multi-modality)
+#   moment_matched -> legacy re-Gaussianized (M-projection) NLL (ablation)
+ms_probabilistic_loss_mode: true_mixture
+# ms_probabilistic_loss_mode: moment_matched
+
+# Pre-mixture (U) loss on the individual pre-mixing predictions.
+pre_mixture_u_loss:
+  enable: false # <--
+
+# Post-mixing (MIX) loss with selectable backprop scope {full_network, mixing_only}.
+# NOTE: true_mixture + MIX(full_network) is rejected (same signal); use mixing_only with it.
+post_mixture_loss:
+  enable: false # <--
+  backprop_mode: mixing_only # Options: full_network, mixing_only
+  loss_weight: 1.0 # Static MIX weight (applied with AND without auto-weighting)
+
+# Shared projection settings for the IPROJ, SIW-MP and GMS-IWAE objectives (and the deploy head).
+#   backprop_mode -> full_network trains the whole prediction body; mixing_only detaches the
+#                    mixture components so only q_theta + the mixing fct train; head_only ALSO
+#                    detaches the mixer log-weights so ONLY q_theta (+ GMS decoder) trains
+#                    (distil a frozen forecast + mixer). Options: full_network, mixing_only, head_only.
+#     NOTE (RLRP-711+): default is mixing_only (detaches the mixture components so only q_theta +
+#     the mixing fct train). full_network additionally trains the prediction body (validated
+#     working) and head_only trains only q_theta. All three values are first-class, selectable
+#     options.
+#   per_step_conditioning-> feed step-i mixture moments to the head (vs always step-0).
+#   temporal_weights     -> UNIFIED single-float discount for the SIW-MP/RC per-step horizon
+#                           reduction. Default 1.0 -> DISABLED (uniform / flat mean, every step
+#                           equally weighted); any value != 1.0 enables the gamma^i horizon
+#                           discount. SEPARATE from the main `temporal_weights` (which discounts
+#                           the multi-step forecast NLL). Indexed on the HORIZON / per-step axis
+#                           (NOT the ensemble num_members axis).
+#   head_hidden          -> hidden width of the shared projection head q_theta. The mixer hidden
+#                           width lives under temporal_mixture_weights.head_size.
+projection:
+  backprop_mode: mixing_only # Options: full_network, mixing_only, head_only.
+  per_step_conditioning: false
+  # Shared auto-weighting toggle for the (mutually exclusive) IPROJ / SIW-MP / GMS-IWAE projection
+  # objectives (true -> dedicated auto-weight slot; false -> static loss_weight).
+  auto_weighting: false
+  temporal_weights: 1.0
+  # Deployable summary head q_theta (emitted at deploy; GMS decoder is a training anchor only): an
+  # ensemble-aware residual trunk + split mean/logvar heads. The legacy `head_arch` was removed.
+  head_hidden: 333 # hidden width of the shared projection head q_theta
+  head_num_layers: 2 # residual blocks in the shared trunk
+  head_split_num_layers: 1 # residual blocks per mean/logvar split head
+  head_dropout: 0.0 # dropout inside every residual block of BOTH the trunk and the split heads
+
+# Information-projection loss KL(q_theta || mixture) via the shared summary head q_theta.
+info_projection_loss:
+  enable: false # <--
+  num_samples: 4
+  head_data_nll: false # <--
+  loss_weight: 1.0 # Static IPROJ weight (applied with AND without auto-weighting)
+
+# SIW-MP / stratified IW mixture-projection bound loss (Stage I; formerly "SIWAE" — the estimator
+# has no Auto-Encoder component, see RLRP-704). Respects the learned mixture weights pi_k.
+#   auto-weighting is controlled by the SHARED projection.auto_weighting toggle (RLRP-704).
+siw_mp_loss:
+  enable: false # <--
+  num_samples: 10
+  loss_weight: 1.0 # Static SIW-MP weight (applied with AND without auto-weighting)
+
+# Generative Mode-Seeking IWAE (GMS-IWAE) loss. Mutually exclusive with siw_mp_loss and
+# info_projection_loss (all three share the single projection head q_theta). Mode-seeking +
+# generative: samples from q_theta and importance-weights against the decoder p(y|z) * mixture.
+#   decoder -> a FIXED identity observation-noise model p(y|z)=f(z, sigma_obs) (mean=z). It is a
+#              training-time anchor and is NOT deployed, so it is intentionally not learned; the
+#              deployable expressiveness lives on the projection head q_theta (RLRP-704).
+gms_iwae_loss:
+  enable: false # <--
+  num_samples: 5
+  loss_weight: 1.0 # Static GMS-IWAE weight (applied with AND without auto-weighting)
+  # auto-weighting is controlled by the SHARED projection.auto_weighting toggle (RLRP-704).
+  decoder:
+    # Identity observation-noise model p(y|z)=f(z, sigma_obs); NOT deployed/learned (RLRP-704).
+    obs_noise: 0.1
+    learnable_noise: true
+
+# Deployable compressed prediction.
+#   mode -> forecast (default, the moment-matched / true-mixture forecast output) or projection
+#           (use the single trained projection head). The `source` selector was removed: the
+#           projection objectives (GMS-IWAE / SIW-MP / IPROJ) are mutually exclusive.
+deploy_head:
+  mode: forecast
+
+# Rollout self-consistency distillation (anti-compounding). Trains the deploy head so its
+# autoregressive composition reproduces the trusted multi-step mixture forecast.
+# NOTE: the RC divergence is NOT configurable — it is auto-derived from the active (mutually
+# exclusive) projection objective (GMS-IWAE -> generative mode-seeking; SIW-MP -> mass-covering;
+# IPROJ / none -> mode-seeking KL) so RC never fights the primary objective on the shared head.
+rollout_consistency_loss:
+  enable: false
+  num_steps: 0 # 0 -> derive min(3, horizon_len)
+  backprop_mode: mixing_only # Options: full_network, mixing_only, head_only
+  loss_weight: 1.0
+  # Dedicated RC auto-weighting toggle (independent from projection.auto_weighting).
+  auto_weighting: false
+
+# Temporal mixing function variant:
+#   kind            -> index: step-indexed learnable gammas (TemporalMixtureWeighs, default);
+#                      input_dependent: ensemble-aware residual MLP over per-step component tokens
+#                        cat([mean, logvar]) (InputDependentTemporalMixtureWeighs; RLRP-735 refactor:
+#                        zero-init -> uniform warm start, honours head_size/num_layers/dropout);
+#                      index_and_history_dependent: ensemble-aware residual MLP over the frozen
+#                        input-history realisation s_τ^H (means-only; no observed log-variance is
+#                        used by the sampling-free model — IndexAndHistoryDependentTemporalMixtureWeighs,
+#                        RLRP-735, PURE history head);
+#                      additive_index_and_history_dependent: the same history head PLUS a zero-init
+#                        per-(i,k) additive index-γ base (φ_i^k = γ[i,k] + ψ_i^k(s_τ^H);
+#                        AdditiveIndexAndHistoryDependentTemporalMixtureWeighs, RLRP-735 P3);
+#                      input_and_index_dependent: step-indexed γ PLUS the per-step input head ρ, no
+#                        history (φ_i^k = γ[i,k] + ρ_i^k(token_i);
+#                        InputAndIndexDependentTemporalMixtureWeighs);
+#                      additive_index_input_and_history_dependent: γ index base + ψ history head +
+#                        ρ per-step input head (φ_i^k = γ[i,k] + ψ_i^k(s_τ^H) + ρ_i^k(token_i);
+#                        AdditiveIndexInputAndHistoryDependentTemporalMixtureWeighs, RLRP-735 P3
+#                        combined).
+#   head_size       -> hidden width of every non-index mixer head (used by all kinds except index).
+#   num_layers      -> number of EnsembleResidualBlocks in every non-index mixer head trunk
+#                      (default 2). Ignored by index.
+#   dropout         -> block-owned dropout inside every residual block of every non-index mixer head
+#                      (default 0.0 -> disabled). Ignored by index. NOTE: for the combined
+#                      additive_index_input_and_history_dependent kind the SAME head_size/num_layers/
+#                      dropout drive BOTH the history head and the input head.
+temporal_mixture_weights:
+  kind: index
+  head_size: 333
+  num_layers: 2
+  dropout: 0.0
+
+# ... Encoder ..........
+# Note: hpo run showed that num_layers + ms_head_num_layers ~= 8 or 9 work best with hid size 1024 on UGV husky dataset (~38000 timesteps)
+num_layers: 5 # ★★ HPO
+hid_size: 1024 # ★★ HPO
+
+# ... Decoder ..........
+ms_head_num_layers: 4 # ★★ HPO
+ms_head_dropout: 0.0
+# ms_head_dropout: 0.05 # ★★ HPO
+
+# Residual block variant for the encoder + MS-head residual stacks:
+#   identity_v2          -> canonical identity-preserving block y = x + Linear2(act(Linear1(x)))
+#                           (default; pure identity skip, zero-init last layer -> starts as identity)
+#   legacy_preact_wrapped -> historical act(x + Wx + b) single-linear residual (ablation /
+#                           reproducing checkpoints trained before the switch)
+residual_form: identity_v2
+
+# Per-region layer-bloc selector (RLRP-768; superset of `residual_form`). null
+# (default) -> encoder/hidden -> residual_v2; every other region (decoder,
+# ms_head, ss_head, mixture, projection, probabilistic_head) -> dense. Override
+# per region with {type, layer_norm, dropout}; type in {residual_v2,
+# residual_legacy, dense, gated_mlp}; gated_mlp + layer_norm legal ONLY in
+# encoder/hidden. `residual_form` stays a working alias (encoder/hidden variant only).
+layer_bloc:
+  encoder:
+    type: residual_v2
+    layer_norm: false
+    dropout: null
+  ms_head:
+    type: dense
+
+# Horizon reduction of the per-step NLLs (only effective for probabilistic losses):
+#   independent -> SUM of per-step NLLs, assuming independent steps p(X,Y)=p(X)p(Y) (default);
+#   prob-sum    -> -logsumexp_j(-nll_j) = -log(sum_j p_j), NLL of prob-space sum p(X)+p(Y)
+#                  (NOT inter-step dependence; formerly 'dependent', RLRP-704);
+#   soft-max-energy -> logsumexp_j(E_j) = log Z, Gibbs free energy / log-partition at beta=1 (~= max_j nll_j);
+#   energy-density  -> (1/beta) * logsumexp_j(beta * E_j), temperature-controlled free energy
+#                      (ms_energy_beta = "learned" [default] for a trainable beta>0, or an explicit float>0).
+# ms_probabilities_reduction: independent
+# ms_energy_axis: step  # energy reductions only: step (default) | feature (over obs dims, then sum over horizon) | joint (RLRP-704)
+
+# obs_feature_weights:
+#   - 1.0
+#   - 1.0
+#   - 1.0
+# act_feature_weights:
+#   - 1.0
+#   - 1.0
+
+history_len: 20
+horizon_len: 10
+unrol_len: 10 # <--
+
+# ... Second AR stage / Compounded-prediction (CP) deploy loss (RLRP-708, Option C2) ......
+# receive_sequence_batch stays TOP-LEVEL: it is a wider-scope flag (the future
+# sequence-enabled replay-buffer path providing non-flat multistep obs (E, B, S, DimOA)),
+# NOT a compounded-prediction-only knob.
+receive_sequence_batch: false
+
+# Standalone deploy-path loss term: a free-running AR NLL of the single-step DEPLOY prediction
+# vs the per-step obs target. Trains ONLY the deploy path (the multistep forecast term is
+# untouched). When the single-step (SS) term is enabled, CP SUBSUMES it (CP's k=0 term == the
+# SS NLL) to avoid double-counting. CP trains the projection head when deploy_head.mode=projection,
+# else the forecast/mixing path. Distinct from rollout_consistency_loss (a forecast<->projection
+# divergence, not a target NLL).
+compounded_prediction_deploy_loss:
+  # Single switch: drives BOTH the CP term AND the second-AR-stage gating (the former flat
+  # ar_enabled / ar_train_horizon_unroll kwargs are derived from it). OFF by default (no
+  # behaviour change).
+  enable: false
+  loss_weight: 1.0 # Static CP weight (applied with AND without auto-weighting)
+  auto_weighting: true # route CP through the composite auto-weighting ("CP" slot)
+  # Decoupled CP unroll horizon (RLRP-708 Task 2c): null -> MS forecast horizon_len. Must be
+  # in [1, horizon_len]; independent from the MS forecast horizon_len / unrol_len.
+  horizon_len: null
+  # .... Deploy-history drift residual sub-term (DH; RLRP-731) ...................................
+  # Terminal-step residual MSE scored INSIDE the CP deploy unroll (same trajectory, same
+  # sampled horizon, same teacher-forcing schedule), computed in RAW (denormalized) obs space.
+  # OFF by default (no behaviour change). Requires the CP term to be active (with CP OFF, DH
+  # is OFF by construction).
+  enable_history_drift_loss: false # <--
+  history_drift_loss_weight: 1.0      # Static DH weight (applied with AND without auto-weighting)
+  history_drift_auto_weighting: true # route DH through the composite auto-weighting ("DH" slot)
+  # Target handling (RLRP-731 red annotation):
+  #   inline_denorm   -> denormalize BOTH prediction and normalized target inside the loss
+  #                      (default; no-op under the asymmetric 'standard' normalizer).
+  #   raw_passthrough -> consume the raw target threaded from the wrapper (RLRP-731 batch B4-raw,
+  #                      Option 1; IMPLEMENTED — the obs-block raw target is threaded via
+  #                      OneDTransitionRewardModelV2.loss/update, MTM-Pro-family only).
+  history_drift_target_mode: raw_passthrough
+  # Second-AR-stage schedulers / teacher-forcing / temporal-discount (formerly flat ar_* /
+  # teacher_forcing_* kwargs, now grouped here). Mirrors B_gru_probabilistic.yaml 20-33.
+  ar_temporal_weights: 1.0
+  ar_temporal_weights_start: 1.0
+  ar_temporal_weights_warmup: 0
+  ar_temporal_weights_ramp_stop: 0 # 0->Disabled
+  ar_unrol_len_probablity_decay_start: 0
+  ar_unrol_len_probablity_decay_stop: 0 # 0->Disabled
+  ar_unrol_len_decay_method: exponential # Options: beta, exponential, linear
+  ar_unrol_len_start_horizon_len: 1 # Short unroll len the curriculum grows from (>=1, <=CP horizon_len)
+  teacher_forcing_decay_start: 0 # warmup phase
+  teacher_forcing_decay_stop: 0 # Options: abs stop step (>decay_start), 0->Disabled, -1->always_on
+  teacher_forcing_method: always_off # Options: linear, exponential, always_on, always_off
+
+# ... Forecast-path teacher-forcing scheduler (RLRP-726) ..........................................
+# DEDICATED scheduled-sampling (Bengio et al., 2015) scheduler for the MS *forecast* self-feed
+# (`state_history_update`), INDEPENDENT of the CP/deploy `teacher_forcing_*` knobs nested in
+# `compounded_prediction_deploy_loss` above. On a "teacher" step the forecast unroll splices the
+# ground-truth obs+act into the next window instead of the free-running mixture sample. The
+# per-epoch probability is published under "Compounded prediction/(MS forecast) teacher forcing prob"
+# cards. Default-OFF (`method: always_off`, `decay_stop: 0`) => byte-for-byte parity for existing
+# runs; the RC re-forwards / eval / deploy paths always stay free-running.
+forecast_teacher_forcing:
+  method: always_off # Options: linear, exponential, always_on, always_off
+  decay_start: 0 # warmup phase (steps held at prob=1.0 before decay begins)
+  decay_stop: 0 # Options: abs stop step (>decay_start), 0->Disabled, -1->always_on
+
+# ... Deploy-path training stabilization (RLRP-722) ......
+# Three INDEPENDENT, OFF-by-default mechanisms that reduce the non-stationarity the deploy-path
+# heads (SS / CP / projection / RC) experience while chasing the still-moving multistep (MS)
+# forecast body. With every `enable: false` the loss, optimizer and deploy() paths stay
+# byte-for-byte identical to the prior behaviour.
+deploy_path_training:
+  # (1) Forecaster warmup: suppress ONLY the deploy-path terms for the first
+  #     `forecast_only_steps` optimizer steps (batches) so the forecast can stabilize, then
+  #     enable them (optionally linearly ramping their static weight over `ramp_steps`). The MS
+  #     forecast term always stays on (the body keeps learning).
+  warmup:
+    enable: false
+    forecast_only_steps: 0   # e.g. 1000; 0 -> disabled
+    ramp_steps: 0            # linear ramp of deploy weights after warmup (0 -> hard switch)
+  # (2) Two-timescale LR: slower LR for the forecast body, faster LR for the deploy heads
+  #     (single optimizer, two parameter groups; per-group weight decay too).
+  two_timescale_lr:
+    enable: false
+    body_lr_mult: 0.5        # body (forecast/mixer) LR  = model_lr * body_lr_mult
+    head_lr_mult: 1.0        # deploy heads LR           = model_lr * head_lr_mult
+    body_wd_mult: 1.0        # body weight decay         = model_wd * body_wd_mult
+    head_wd_mult: 1.0        # deploy heads weight decay = model_wd * head_wd_mult
+  # (3) EMA frozen-decaying MS-forecast clone (phased rollout: NOT implemented yet -> keep
+  #     enable=false). The deploy terms in `feed_to` would read a STABLE EMA forecast instead of
+  #     the live, fast-moving body.
+  ema_forecast_clone:
+    enable: false
+    momentum: 0.999          # d in  theta_ema <- d*theta_ema + (1-d)*theta
+    momentum_schedule:
+      kind: none             # none | linear | cosine
+      start: 0.99
+      end: 0.9999
+      horizon_steps: 0
+    feed_to: [projection, cp]   # subset of {ss, projection, rc, cp}
+
+# Optional safety valve to cap autograd-tape depth of the AR unroll.
+# null  -> full BPTT through the AR loop (spec-faithful, default).
+# int k -> .detach() the propagated state-history when horizon_index+1 >= k.
+# Set to a small int (e.g. 4-8) only if memory pressure or long-range
+# gradient pathology is observed in training.
+detach_state_history_after_n_steps: null # <--
+
+singlestep_obs_len: ??? # quickhack
+singlestep_act_len: ??? # quickhack
+
+activation_fn_cfg:
+  _target_: torch.nn.GELU
+#  _target_: torch.nn.Softplus
+# _target_: torch.nn.SiLU # Also known as the swish function
+
+# Activation fct ref
+# - https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity
+# - (2021) https://www.v7labs.com/blog/neural-networks-activation-functions
+
+# ... Train-Time Domain Randomization ..........
+# Train-time domain randomization top layer (OFF by default).
+# Introduced by task RLRP-707 of the Training-Pipeline Domain Randomization `.junie` plan
+# (feature_training_pipeline_domain_randomization_plan_20260610.md).
+train_time_domain_randomization:
+  enable: false               # ★ disabled by default for all parent and child models
+  noise_kind: gaussian        # Options: gaussian, uniform, time_correlated, reverse_time_correlated, time_correlated_hi_to_ho, reverse_tc_in_tc_out
+  default_scale: 0.0          # Fallback when per_feature_scale is None
+  per_feature_scale: null     # List of per-feature noise magnitude
+  correlation: 0.0            # AR(1) coeff in [0, 1) for time_correlated kinds: 0.0 => i.i.d. noise (no
+                              # temporal correlation); 0.5 => moderate correlation between consecutive
+                              # timesteps; ->1.0 => strongly persistent (noise nearly constant along time).
+  randomize_target: false     # Enable DR for model input and target (REQUIRED true for time_correlated_hi_to_ho, reverse_tc_in_tc_out)
+  scheduler:
+    kind: constant            # One of constant, linear, ease_in_out_ramp or cyclic_cosine.
+    start_scale: 1.0          # Multiplier value at (or before the end of) the warmup phase.
+    end_scale: 1.0            # ramp kinds: target value; cyclic_cosine: envelope target (grows/shrinks wave magnitude).
+    warmup_epochs: 0          # Number of initial epochs held at start_scale.
+    total_epochs: 0           # ramp kinds: epoch index at which end_scale is reached (clamped after).
+    cycle_length: 0           # cyclic_cosine: wave length (period) in epochs.
+    cycle_length_growth: 0.0    # cyclic_cosine: epochs added to the period per elapsed epoch; widens (>0) / narrows (<0), independent of total_epochs.
+    trough_growth: 0.0          # cyclic_cosine: lifts the per-cycle lowest point (0.0 => trough returns to 0; 0.25 => +25% of envelope per cycle).
+
+
+# ====General======================================
+dropout: 0.0
+
+model_use_double_precision: false # ⚠️
+
+# RLRP-758: model-internal velocity training frame the dataset velocities are
+# re-expressed into at ingestion, then persisted with the checkpoint and guarded
+# on load. Options: body (new default), world (legacy ablation lever),
+# gravity_aligned (heading frame, RLRP-792). NOTE: this is NOT a model
+# ctor kwarg; the setup seam resolves + strips it and attaches it via
+# set_training_frame (see pipeline_utils/general/setup.py).
+training_frame: body
+
+# RLRP-736: per-feature geometry loss weight (0.0 -> OFF / bit-exact legacy loss).
+# Set > 0 to enable the orientation-aware geodesic term for envs whose feature
+# handler defines a quaternion group (robotic-3D UGV/UAV); no effect for the
+# neutral math-env handler.
+feature_geometry:
+  loss_weight: 0.0
+  loss_objective: null # Options: geodesic (default), chordal, null (disable)
+  # RLRP-751: false (default) -> STATIC weighting (scaled by loss_weight, legacy
+  # behaviour); true -> route the SS/MS/CP feature-geometry channels through the
+  # composite uncertainty auto-weighting (Kendall 2018), with loss_weight as the
+  # pre-multiplier. ONE key controls all three channels; gracefully degrades to
+  # STATIC on families without an (enabled) composite auto-weighting module.
+  auto_weighting: false
+
+# RLRP-736: by-construction internal orientation representation. The live /
+# default representation is quaternion (unit-normalized, bit-exact legacy). The
+# nine_d_svd / sixd continuous heads are ABANDONED legacy prototypes, kept only
+# for reproducibility of archived experiments (NOT recommended live options),
+# for envs whose feature handler defines a quaternion group (robotic-3D UGV/UAV).
+internal_orientation:
+  representation: quaternion # Options (live): quaternion (default), quaternion_legacy. nine_d_svd, sixd are ABANDONED legacy prototypes (kept for reproducibility of archived experiments only)
+  tangent_nll_right_jacobian: false # false -> 'plain' tangent density
+  manifold_aware_nll: null # RLRP-744 item A: null -> auto (matrix reps ON, quaternion OFF); true -> force ON (quaternion manifold upgrade); false -> force OFF (matrix-rep ablation)
+  # RLRP-744 item C: the plain `quaternion` rep ALWAYS decodes to a unit quaternion
+  # IN-GRAPH by construction (no lever; independent of manifold_aware_nll);
+  # quaternion_legacy keeps the raw un-normalized legacy output.
+  # NOTE: enforce_continuity acts at data ingestion on the raw
+  # quaternion. It affects learning ONLY for the quaternion/quaternion_legacy
+  # reps (raw 4-D input slot); it is mathematically bit-identical (inert, no
+  # conflict) for sixd/nine_d_svd, which encode via SO(3) matrices (R(q)=R(-q)).
+  # RLRP-744 item E: this key ALSO gates the MODEL-SIDE reference-relative attitude
+  # alignment (align_quaternion_slots_to_reference at AR splice/deploy + the DH residual)
+  # via _quaternion_ar_continuity_active, so it governs continuity end-to-end (all reps
+  # except quaternion_legacy). It does NOT affect the in-graph unit decode (item C).
+  enforce_continuity: false # true -> enforce <q_t,q_{t-1}> >= 0 temporal sign continuity; false (default) -> disable
+
+# RLRP-830: training-speed fast paths of the MTM-Pro family. Every switch is
+# BIT-IDENTICAL to its legacy path (forward / deploy / loss / grads, CPU + CUDA)
+# and only removes redundant kernel launches; `false` re-enables the legacy path
+# (kept in-tree for the parity tests).
+# Item D: decode the U unroll attitude slots of every u-forward with ONE
+# gather -> normalize -> scatter (RLRP-747 primitive) instead of a per-slot loop.
+# Inert for envs without an orientation slot (Husky / Lorenz) and for the
+# width-changing reps (sixd, nine_d_svd, s2_tangent keep the generic path).
+vectorized_unroll_orientation_decode: true
+# RLRP-830 Item C (Step 2): score the U compounded-prediction (CP) deploy steps with ONE
+# stacked per-feature true-mixture NLL after the sequential unroll instead of one NLL
+# pass per step (bit-identical; the unroll and the gamma accumulation order are
+# unchanged). Inert in ms_probabilistic_loss_mode=moment_matched. false = legacy path.
+# Known exception (A100 / Narval parity run 2026-09-19, plan FR4 option (a), operator
+# decision): with `internal_orientation.manifold_aware_nll: true` (so3-tangent NLL, OFF in
+# the paper configs) in fp64 on CUDA sm_80, ONE trunk weight grad differs at ulp level
+# (fp64 reduction order of the stacked tangent NLL); forward / deploy / loss stay equal.
+# fp32 CUDA, CPU fp64 and every other configuration are bit-identical.
+batched_cp_scoring: true
+# RLRP-830 Item B1 (Step 3) -- OPT-IN, legacy-by-default (plan FR4): re-use the forecast's
+# per-step MixtureSameFamily for the true_mixture MS NLL instead of rebuilding it. Forward,
+# deploy, loss and all trunk/head grads are bit-identical, but the MIXER parameter grad
+# (temporal_mixture_weights.mixture_logits) picks up a ~1-ulp summation-order deviation when
+# an attitude slot is live, which fails the bit-identical gate. ~2 % of the step; enable
+# only if that deviation is acceptable for the run.
+reuse_step_mixture: false
+
+# RLRP-786 (CUDA-graph captured training step, `perf_RLRP-786_cuda_graph_train_step_plan_20260919.md`,
+# FR6): graph-capturable forecast-path teacher forcing. The per-horizon-step CPU coin
+# (`should_use_teacher_forcing()`, a Python branch) becomes a static `(F,)` bool DEVICE mask refilled
+# from the CPU scheduler once per training step and consumed with a `torch.where` selection in the
+# SAMPLING-FREE `state_history_update` (bit-identical to the Python branch, same CPU RNG stream).
+# Required (with `pipeline.performance_mode: fast`) by `pipeline.benchmark.compile_mode=cuda-graph`
+# and the production `pipeline.cuda_graph_training_step` opt-in; inert on the particle variants
+# (their sampled splice keeps the Python branch and they fall back to eager under graph mode).
+cuda_graph_capture_ready: false
+
+device: ${device}
+in_size: ???
+out_size: ???

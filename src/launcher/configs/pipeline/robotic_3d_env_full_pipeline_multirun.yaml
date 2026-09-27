@@ -1,0 +1,124 @@
+
+name: "robotic_3d_env_full_pipeline_multirun"
+
+# RLRP-824 (FR1): replay-buffer (legacy, default) | dataloader (lazy window path, required for
+# `horizon_len > history_len` and the F=500 / F=1000 horizons). See `robotic_3d_env_full_pipeline.yaml`.
+data_manager: replay-buffer
+
+ms_replaybuffer_save_dir: "ms_replaybuffer"
+# Expected MS sub dir pattern: "HI<history-len>_HO<horizon-len>"
+enable_ms_replaybuffer_saving_to_data_dir: false # ToDo: add logic to prevent race condition
+force_regenerating_saved_ms_replaybuffer: false # ★ Prevent race condition
+
+# RLRP-786 training-step performance levers (`performance_mode`, `cuda_graph_training_step`,
+# `cuda_graph_warmup_steps`, `cuda_graph_allow_autocast`): declared ONCE in `global_config.yaml`
+# (`pipeline:` block, see `global_config.README.md`) and inherited here. EXPERIMENT pipeline (every
+# `multirun_overrides/**` experiment cfg composes it) -> `fast`: the dev/debug-only instrumentation of
+# the training step is OFF (`loss` / grads / Adam state `torch.equal` to `dev`, RLRP-786 FR8). Debug a
+# multirun cfg with `+dev@_global_=robotic_3d_env_debug` (or any `dev/*debug*` overlay): they set
+# `performance_mode: dev` back. The CUDA-graph captured step stays the global opt-in (`false`);
+# enable it per experiment with `pipeline.cuda_graph_training_step=true` (needs `fast`, see README).
+performance_mode: fast
+
+# RLRP-824 (`data_manager: dataloader` only): single-step trajectory HDF5 store cache (written
+# atomically: tmp file + rename, so concurrent identical writers cannot corrupt it). Staged SLURM
+# GPU jobs override `ms_hdf5_allow_generate=false` and read the store via `RLRC_STAGE_DATA_DIR`
+# (written once by the CPU GEN-HDF5 job, `slurm_jobs/RLRP-757-GEN-HDF5/`).
+ms_hdf5_save_dir: "ms_hdf5"
+enable_ms_hdf5_saving_to_data_dir: true
+force_regenerating_saved_ms_hdf5: false
+ms_hdf5_stage_dir: ${oc.env:RLRC_STAGE_DATA_DIR,null}
+ms_hdf5_allow_generate: true
+ms_hdf5_write_to_stage_dir: false
+
+dataloader:
+  normalizer_fit_max_windows: 65536
+  boundary_mode: pad
+  store_device: auto # auto | cpu | model | <torch device>, see `robotic_3d_env_full_pipeline.yaml`
+
+steps:
+  # single_step_model_learning: false
+  # multi_step_model_learning: true
+  # metric_step: false
+  test_rollout_InD: true
+  test_rollout_OOD: true
+  test_rollout_deterministic: true
+  test_rollout_probabilistic: false
+  test_rollout_ground_truth: true
+  test_rollout_compounded_pred: true
+
+plot:
+  figsize: [35,18]
+  figdpi: 50 # matplotlib defaut is dpi=100
+  save_dpi: 50 # matplotlib defaut is dpi=100, null to disable saving
+
+  # Note: Recommend using same scaling factors for both ale and epi. The options to use distinct
+  # ones exist mainly for development purposes.
+  ale_uncertainty_scaling: 2
+  epi_uncertainty_scaling: 2
+
+  show_environment_plot: false # ⚠️
+  save_environment_plot: false # ⚠️
+
+  render_dataset_exploration_plot: false
+  show_dataset_exploration_plot: false
+  show_loss_plot: false
+  show_prediction_plot: false
+  show_prediction_mae_plot: false
+  show_epistemic_uncertainty_plot: false
+  show_approx_sn_abs_error_plot: false
+  show_sliding_window_snr_plot: false
+  show_environment_1d_subplot_interval: null
+  show_deploy_prediction_1d_subplot_interval: null
+
+  # RLRP-741: extra 1D prediction plots selected by observation-dimension name (must match names in
+  # `environment.obs_dims`, e.g. `linear_vels.x`, `attitude.w`). Works for both `ugv_general.yaml`
+  # and `quadcopter_general.yaml` (identical `obs_dims`).
+  # Empty/absent => only the x/y/z coordinate subplots are shown (default OFF).
+  # show_prediction_feature_dims: [] e.g. ['linear_vels.x', 'attitude.w']
+  show_prediction_feature_dims:
+    - 'linear_vels.x'
+    - 'linear_vels.y'
+    - 'linear_vels.z'
+    - 'attitude.w'
+    - 'attitude.x'
+    - 'attitude.y'
+    - 'attitude.z'
+    - 'angular_vels.x'
+    - 'angular_vels.y'
+    - 'angular_vels.z'
+
+
+tensorboard:
+  batch_callback_execute_every_n: null # Option: <int>, null -> disabled batch callback <--
+
+  record_trajectory_pred_every_n_train_epoch: null # Default 500, set to null to skip
+  trajectory_record_step_size: 100 # Default 100
+  generate_model_graph: false
+  generate_gradient_figure: false
+  obs_dim_label: ${environment.obs_dims}
+  rollout_dim_label: ["X", "Y", "Z"]
+
+  enable_gradient_and_parameters_histogram: false # Need to be true for any generate_model_* cfg key below to take effect
+  # A7 (RLRP-788): diagnostic meta-collection kill-switch (perf_RLRP-788_meta_collection_killswitch_plan_20260827.md).
+  enable_meta_collection: false
+  generate_model_parameters_head_leaf: false # <--
+  generate_model_parameters: false
+  generate_model_gradients: false
+  generate_model_gradient_norm: false
+
+  generate_prediction_distributions: false
+  generate_prediction_rollout_mae: false
+
+  #clear_tmp_directory_run_artifact_on_teardown: true
+
+
+# A8 (RLRP-783 follow-up): opt-in fused (CUDA) Adam that removes the per-parameter
+# `torch.optim.optimizer._get_value(step).item()` device->host sync
+# (`perf_RLRP-783_mtm_pro_models_code_optimization_plan_20260827.md`). Consumed by the main config
+# via `training_common.optimizer.adam_fused: ${oc.select:pipeline.optimizer.adam_fused,false}`.
+# NOTE fused Adam is NOT bit-exact vs the legacy single-tensor kernel and is CUDA-only (the RLRC
+# seam `change_optimizer` falls back to legacy off-CUDA). Enabled on this hot-path pipeline.
+optimizer:
+  adam_fused: true
+

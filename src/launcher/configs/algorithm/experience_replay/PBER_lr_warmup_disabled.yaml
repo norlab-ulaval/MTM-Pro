@@ -1,0 +1,73 @@
+
+name: 'Progressive Batch Experience Replay (PBER)'
+
+# RLRP-727: ERLL loop selector (uder | pber | single_global_loop).
+loop_kind: pber
+
+testtime_rollout_every_n_erll_epochs: 1
+
+# Follow-up to RLRP-727: intra-final-pass checkpoint cadence, counted in INNER training epochs. On
+# the final ERLL pass only, run the checkpoint routine every N inner epochs (0 = off / legacy: keep
+# the single per-pass save). Restores periodic best-model persistence for the long final `train()`
+# call (esp. `single_global_loop`, whose only pass IS the final pass).
+checkpoint_every_n_final_inner_epochs: 10
+
+# Validate using --> np.array([int(B*(G**e)) f
+batch_size: # See 'notebooks/uder_related.ipynb'
+  # init_value: 32 # ★ small is better for VI <--
+  # limit: 264 # <--
+  # gamma: 1.038 # For 50->100 in 20 Uder epochs
+  # gamma: 1.05 # For 200->500 in 20 Uder epochs
+  gamma: 1.12 # For 32->264 in 20 Uder epochs
+  # gamma: 1.19 # For 32->1000 in 20 Uder epochs
+  # gamma: 1.09 # For 200->400 in 10 Uder epochs
+  # gamma: 1.26 # For 200->500 in 5 Uder epochs
+  init_value: 200 # <--
+  limit: 200 # <--
+
+# uder_num_epoch_init_override: 5 # int, false => skip override, null => 'patience'
+# # ↳ Warmup: Set init nb epoch to give multi-task weighting time to stabilize
+# Note:
+#   - Schedule cfg 1 need cyclic epoch len ~10-15
+#   - Schedule cfg 2 need cyclic epoch len ~40-60
+
+# uder_num_epochs: 1 # ★
+# uder_num_epochs: 4 # ★
+# num_epochs_train_model: 100 # ★
+# uder_num_epochs: 15 # ★
+uder_num_epochs: 20 # ★
+# num_epochs_train_model: 400 # ★
+# num_epochs_train_model: 600 # ★
+# num_epochs_train_model: 800 # ★★
+num_epochs_train_model: 1000 # ★★
+# final_max_num_epochs_train_model: null # Options: int or null => patience threshold
+final_max_num_epochs_train_model: 100 # Options: int or null => patience threshold
+
+feature_weight_scale_min: 1.0
+# feature_weight_scale_min: 0.8
+feature_weight_scale_max: 1.0
+
+uder_lr_schedule:
+  # RLRP-727 (B1) Law-U: when true, the ERLL loop owns the LR as lr(p,e)=base*g(p)*h(e) with a
+  # per-pass restart of the inner schedule (replaces the clobbering dual-scheduler pattern).
+  # Default false = historical behaviour.
+  law_u_enable: true # <-- # (PRIORITY) inprogress: validate `law_u_enable: true` (ref task RLRP-727)
+  warmup: null # Note: cfg with uder lr warmup disabled
+
+  # exp_decreassing: 0.8
+  # exp_decreassing: 0.88
+  exp_decreassing: 0.90 # ★ Schedule cfg 1
+  # exp_decreassing: 0.92
+  # exp_decreassing: 0.95 # Schedule cfg 2
+
+max_sequence_batches_per_loop_train: null # Options: int, null, 'match_optimizer_num_epoch'
+
+# buffer_max_trajectory_len: 1000
+buffer_max_trajectory_len: null       # Option: int, null
+buffer_iterator_sequence_len: 20      # Disabled if buffer_max_trajectory_len: null
+val_buffer_iterator_sequence_len: 20  # ...
+
+# ...For debug........
+# buffer_max_trajectory_len: 200
+# buffer_iterator_sequence_len: 100
+# val_buffer_iterator_sequence_len: 200

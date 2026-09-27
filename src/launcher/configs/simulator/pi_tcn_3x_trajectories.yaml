@@ -1,0 +1,32 @@
+name: "pi_tcn_3x_trajectories"
+
+defaults:
+  - quadcopter_general
+  - _self_
+
+dataset_name: pi_tcn
+data_path: data/external_data/long_horizon/data/pi_tcn
+
+obs_are_dt_derivatives: true
+obs_time_is_delta_time: true
+
+data:
+  label: "Pi-TCN (3x train trajectories)"
+  linear_velocity_frame: world
+  angular_velocity_frame: body
+  trajectories:
+    - trajectory_name: test_trajectories/ellipse_1
+    - trajectory_name: test_trajectories/extended_lemniscate
+    - trajectory_name: test_trajectories/warped_ellipse_1
+  test_InD_trajectory:
+    - trajectory_name: test_trajectories/extended_lemniscate
+      category: L
+    - trajectory_name: test_trajectories/parabola
+      category: M
+  test_OOD_trajectory: null
+
+# global_interval_idx: [0, 10001]
+time_space:
+  bound: ???
+  granularity: ???
+# explorable_space: [[0, 8001]] # Not used in robotic env for now

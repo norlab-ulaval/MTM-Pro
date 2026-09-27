@@ -1,0 +1,246 @@
+#
+# Hydra launch command with experiment cfg override:
+#   $ python3 launcher/multirun_testtime_rollout_plot.py multirun_testtime_rollout_plot@_global_=quadcopter_env_autoregressive_baselines_DEBUG
+#
+#   $ python3 launcher/multirun_testtime_rollout_plot.py multirun_testtime_rollout_plot@_global_=icra2026_Lorenz_RLRP-757-E4B-low-global-noise regenerate_rollouts=true
+#
+
+defaults:
+  - /global_config
+  # ....pipeline.....................................
+  - /pipeline: multirun_testtime_rollout_plot_pipeline
+  - _self_
+  # ....simulation mode..............................
+  - /simulation_mode: single_agent_flatten_human # alt: single_agent_flatten_headless
+  # ....Paper figures (one configuration per dataset, override on the command line)..............
+  #   $ python3 launcher/multirun_testtime_rollout_plot.py multirun_testtime_rollout_plot@_global_=<name>
+  - /multirun_testtime_rollout_plot@_global_: icra2026_Lorenz_RLRP-757-E4B-low-global-noise
+  # - /multirun_testtime_rollout_plot@_global_: icra2026_ugv_RLRP-757-F2c-obsD6-online
+  # - /multirun_testtime_rollout_plot@_global_: icra2026_neurobem_RLRP-757-F1
+  # - /multirun_testtime_rollout_plot@_global_: icra2026_pi_tcn_RLRP-757-B1a
+
+# ====Ops related default==========================================================================
+
+# .................................................................................................
+# Figure rendering mode
+# Option: standalone, latex_includegraphics
+render_type: standalone # <--
+# render_type: latex_includegraphics
+
+latex_includegraphics:
+  save_path: ???
+  file_name: ???
+
+# .................................................................................................
+# Experiment data consolidation (RLRP-818). Opt-in: when enabled, each generated
+# plot ALSO dumps the numeric series it renders as one CSV per group under
+#   data/data_consolidated/${overrides.experiment}/<metric>/<grp_name>/
+# so the ICRA 2026 standalone plot functions (RLRP-817) can rebuild the identical
+# figure without re-running this pipeline. Enabling it IS the intent to write into
+# the version-controlled 'icra_2026_plot' submodule.
+consolidate_data:
+  enable: false # <--
+  # enable: true # <--
+  # RLRP-819: ALSO dump the raw per-rollout drift population, which is what makes a
+  # genuine boxplot (paper fig 2) possible. Additive: `drift_rate/` is unaffected.
+  emit_samples: true
+  # Destination override, TEST-ONLY: redirects the whole consolidated data tree
+  # (e.g. to a pytest 'tmp_path') so the tests never dirty the submodule.
+  output_dir: null
+  # ⚠️ `deployed` (default) or `all`. `all` multiplies the dump by the epoch count
+  #    (9-17x, i.e. HUNDREDS of MB) -- it is an opt-in for a per-epoch box study only.
+  drift_rate_sample_epochs: deployed
+  # 🆕 v6 / ruling Q13: `null` -> python `repr` (bit-exact). Set e.g. '%.9g' to halve
+  #    the on-disk size; 9 significant digits are far beyond any plot's resolution.
+  drift_rate_sample_float_format: null
+  # 🆕 v6: size escape hatch -- keep every Nth timestep. `null` -> the FULL grid, which
+  #    is the whole point of the v6 layout (arbitrary downstream freeze points).
+  drift_rate_sample_timestep_stride: null
+  # Provenance only since v6: the ratio -> timestep map recorded in `meta.txt` for the
+  #    N10 producer/consumer cross-check. It no longer gates WHICH abscissae are dumped.
+  drift_rate_sample_horizon_ratios: [0.25, 0.5, 0.75, 1.0]
+
+# .................................................................................................
+regenerate_rollouts: false # ⚠️
+regenerate:
+  epoch_checkpoint_rollouts: # Require 'regenerate_rollouts: true'
+    enable: false
+    epoch_stride: null
+    epochs: null
+simulator_config: ??? # optional: override trajectory source when regenerating (e.g. 'neurobem_quarter_dataset' with no '.yaml' extension)
+cleanup_legacy_rollouts: false  # when true + regenerate_rollouts, remove old flat-layout TTRPM dirs and rollout PNGs
+
+# .................................................................................................
+pre_processing:
+  gpr_reduction: mean # Option: median or mean
+  feature_reduction: mean # Option: sum, mean
+
+# ====Display related default======================================================================
+
+show:
+  grp_size: false
+  acronym: true
+  error_type: elementwise_mae # Options: l2_norm, elementwise_mae
+  # error_type: l2_norm # <--
+  # Note: we avg the mae over feature dimensions at the final stage (i.e., the final results is equivalent to the L1 norm)
+  show_NaN_warning: false
+  # show_NaN_warning: true # <--
+
+  # ... Test trajectory selection (RLRP-841) ......................................
+  # Restricts the drift-rate plots (`generate_drift_rate_plot` and its
+  # `per_train_epoch` companion, incl. their consolidated CSVs) to an
+  # explicitly named subset of the test trajectories so a test set can be
+  # split in distinct analysis groups. Names must match VERBATIM the
+  # `trajectory_name` entries of the `simulator_config` under
+  # `data.test_InD_trajectory` (or `data.test_OOD_trajectory` when
+  # `target_is_ood: true`), e.g. `test_trajectories/ellipse_1`. Any unknown
+  # name is a hard error listing the available names (fail fast).
+  # Options: null -> every test trajectory (legacy, default)
+  #          [<trajectory_name>, ...] -> only the listed trajectories
+  selected_trajectories: null
+
+  # ... M2 adverse-event metric slice (RLRP-761 S6.2) .............................
+  # Scores the recorded error restricted to the RARE high-dynamics windows of
+  # the GROUND TRUTH, instead of over the whole trajectory. Motivation: on a
+  # skid-steer UGV the `linear_vels.z` / `angular_vels.x` / `angular_vels.y`
+  # channels are near-pure terrain-vibration noise in the nominal regime, so a
+  # whole-trajectory MAE cannot distinguish a model that captures the rare
+  # adverse excursions (traction loss on a rock, weight transfer in an
+  # aggressive turn, aggressive UAV manoeuvre) from one that merely fits the
+  # vibration floor.
+  #
+  # The slice is the top `top_fraction` of timesteps ranked by the per-channel
+  # standardized `‖Δ(feature_dims)‖` (first difference over time), dilated by
+  # `window` steps on each side so the model's RESPONSE to the event is scored
+  # too. It is derived from the ground truth ONLY, hence identical across every
+  # compared group.
+  #
+  # `feature_dims` are resolved BY NAME against each recorded run's saved
+  # `environment.obs_dims` (never positionally); a name absent from the
+  # recorded layout is a hard error.
+  #
+  # Default OFF (strict no-op).
+  adverse_event_slice:
+    render: false
+    # feature_dims: ['linear_vels.z', 'angular_vels.x', 'angular_vels.y']
+    # top_fraction: 0.05
+    # window: 2
+    # metric_key: mae # Options: mae, l2_norm
+    # min_slice_steps: 5
+
+  generate_final_general_plot:
+    render: true
+    skip_nan_contaminated_mae: false
+    skip_nan_contaminated_std_uncertainty: false
+    group_stack_cumsum: "post" # Options: pre, post
+    final_length_spec: 3500 # x-axis cutoff (option: null, 'min', 'max' or an int).
+
+  # ... Inference speed / cost (RLRP-785 A4) .......................................
+  # Both default OFF => strict no-op; they require the per-step benchmark
+  # instrumentation (`deploy.benchmark.enabled: true`) to have been recorded.
+  generate_rollout_inference_speed_plot:
+    render: false
+    unit: hz                                    # Options: hz, fps
+    levels: [control_loop_step, model_call]     # one box per level
+    source: measured                            # Options: measured (StepBenchmarkMetric, fail-fast), harness (steps/seconds), auto (measured + harness fallback & relabel)
+
+  generate_rollout_inference_cost_breakdown_plot:
+    render: false
+    min_components: 2                           # min. nb of measured levels required per group
+
+  generate_drift_rate_plot:
+    render: false
+    drift_type: timesteps # Options: timesteps, path_length
+
+    # dispersion_type options: std, std-err, mad (mad is log-space robust, log_normal only)
+    dispersion_type: std-err
+    # dispersion_type: mad # Require cfg key "logscale_band_method: log_normal"
+
+    # Band computation on a LOG y-axis only (RLRP-807; ignored when
+    # `y_axis_in_logscale` is false, and by the linear-scale path).
+    # Options:
+    #   linear      -> legacy avg ± dispersion (default, no behaviour change)
+    #   percentile  -> median with [16th, 84th] percentile band (robust, recommended
+    #                  for conveying seed-to-seed stability; ignores `dispersion_type`)
+    #   log_normal  -> geometric mean ± dispersion in log space (symmetric on log axis;
+    #                  honours `dispersion_type`; use `std` for seed spread, or
+    #                  `mad` for a robust log-space spread that tames a single
+    #                  diverging seed -- pairs well with `mae_grp_reduction: median`)
+    # logscale_band_method: linear
+    logscale_band_method: percentile
+    # logscale_band_method: log_normal
+
+    length_cutoff: null # Options: null->trajectories smallest lentgh, int->select all trajectories of length >= to length_cutoff
+
+    # Percentile coverage for the `percentile` band method (RLRP-807; ignored by
+    # `linear`/`log_normal`). Options:
+    #   sigma -> [16th, 84th] percentile (~68% coverage, 1-sigma equivalent)
+    #   iqr   -> [25th, 75th] interquartile range: a NARROWER band that overlaps
+    #            less between groups (better readability) while still conveying
+    #            relative seed spread (wider IQR = less stable)
+    # percentile_band_coverage: sigma
+    percentile_band_coverage: iqr
+
+    mae_feature_reduction: mean # 3D mae -> 1D mae. Options: mean, median
+    # mae_feature_reduction: median # 3D mae -> 1D mae. Options: mean, median
+    # mae_grp_reduction: mean # Grp per trj mae -> Grp avg mae. Options: mean, median
+    mae_grp_reduction: median # Grp per trj mae -> Grp avg mae. Options: mean, median
+
+    # `train_epochs` drives the iteration: null (deployed/final model, legacy),
+    # a single int, a list of int (a SERIES of training epochs -> one figure
+    # per epoch, each file prefixed with `<train_epoch>_epoch_`), or `all` to
+    # auto-discover and render every available `epoch_<E>` snapshot.
+    # - null -> Show only the deployed/final model
+    # - all -> Auto-discover every available training epoch snapshot
+    # - [<int>, ...] -> Series of training epochs (one figure each)
+    train_epochs: null
+
+    # Assemble the produced PNG series into a 1-fps slideshow video (`ffmpeg`).
+    generate_diaporama: false  # Options: true->build the .mp4 slideshow, false->skip
+    diaporama_fps: 1.0        # Frames per second (each image shown 1/fps seconds)
+    top_ylim: 1.0e+0
+    bottom_ylim: 1.0e-3
+
+    # ... Per-train-epoch C-MAE drift-rate plot (RLRP-773 W9) ....................
+    # Opt-in NEW companion plot: one point per discovered `epoch_<E>` training
+    # snapshot under `<experiment_base>/epoch_checkpoints_rollouts/` (X axis is
+    # the TRAINING EPOCH, Y axis is the same C-MAE drift-rate reduced to a
+    # per-epoch scalar). Default OFF (`render: false`) => the drift plot above
+    # runs UNCHANGED, and this is a strict no-op when no per-epoch rollout tree
+    # exists. Every sub-key below is optional; when omitted it inherits from the
+    # parent `generate_drift_rate_plot` block (`length_cutoff`, `drift_type`) or
+    # the global default (`y_axis_in_logscale`).
+    per_train_epoch:
+      render: false
+      # drift_type: "timesteps"   # inherits parent when omitted; Options: "timesteps", "path_length"
+      # length_cutoff: 250        # inherits parent when omitted
+      # list of int (a SERIES of horizons -> one figure per horizon, each saved
+      # file prefixed with `<length_cutoff>_horizon_<plot_name>.png`), or an
+      # INTERVAL mapping `{start: <int>, stop: <int>, step: <int>}` which is
+      # expanded to one horizon per `step` over `[start, stop]` (`stop` is
+      # INCLUSIVE when it lands on a step boundary). `step` defaults to 1.
+      # length_cutoff: 5000       # inherits parent when omitted
+      # length_cutoff: 25  # Still in the warmup phase
+      # length_cutoff: 35  # Out of warmup phase for 10 step
+      # length_cutoff: 125  # Out of warmup phase for 100 step
+      # length_cutoff: [25, 50, 100, 200, 210, 250, 300, 400]  # Series of horizons (one figure each)
+      length_cutoff: {start: 200, stop: 2263, step: 250}  # Interval -> [20, 40, 60, ...]
+      # Assemble the per-horizon PNG series into a 1-fps slideshow video
+      # (`ffmpeg` required); inherits the parent value when omitted.
+      generate_diaporama: false  # Options: true->build the .mp4 slideshow, false->skip
+      diaporama_fps: 4        # Frames per second (each image shown 1/fps seconds)
+      # y_axis_in_logscale: false # inherits the global default when omitted
+      top_ylim: 5.0e+1          # For logscale
+      bottom_ylim: 1.0e-3       # For logscale
+
+
+
+label_override:
+  InD: "Nominal trajectories (i.e., InD environment)"
+  OoD: "Adverse trajectories (i.e., OoD environment)"
+  # Override the word "trials" used in plot titles/legends (default: "trials").
+  # Applies to the General plot title, the General-plot ``N=…`` annotation,
+  # the legend ``(<n> trials [× …])`` size label, and the per-category
+  # variation-type description.
+  # trials: "trials"
+  trials: "models"

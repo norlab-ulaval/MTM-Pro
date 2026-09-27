@@ -1,0 +1,125 @@
+# @package _global_
+
+# /////////////////////////////////////////////////
+#
+#                        ★
+#                    CoRL 2026
+#       Configuration for experiment RLRP-757
+#            experiment: Husky F2c online, ULH F=50
+#
+# Ultra-long-horizon (RLRP-824) M3 baseline: asymmetric window H=1 / F=50 on the lazy window
+# DataLoader path (`pipeline.data_manager: dataloader`), shared-net realisation.
+#
+# Procedure:
+#   1. Select specialized multirun cfg in robotic_3d_env_main_multirun.yaml
+#   2. Execute:
+#       $ python3 launcher/robotic_3d_env_main_multirun.py --config-name=multirun-m3-F50 --config-dir=launcher/configs/multirun_overrides/robotic_3d_env/RLRP-757-Husky-F2-online
+#
+#   Override nb of trial by adding: --multirun "trial_nb=range(2)"
+#
+# For debuging, add: +dev@_global_=robotic_3d_env_debug
+#
+# Note:
+#   Joblib (`loky`) launcher via `/multirun_named_subdir`: `HPO_N_JOBS` trials run concurrently in one
+#   process tree sharing ONE GPU (operator decision 2026-09-16, option (b): no SLURM job-array mode).
+#   The FR15 profile measured `num_workers > 0` as a NO-GO, so daemonic Joblib workers cost nothing
+#   here (`WindowDataLoaderDataSource` forces `num_workers: 0` under a daemon anyway). Size
+#   `HPO_N_JOBS` to the GPU: the F>=500 rows are GPU-bound (1 trial per GPU, resubmit the sbatch
+#   once per GPU); Husky F50 / Lorenz M3 under-utilise a GPU (several trials per GPU).
+#   Staged HDF5 store: `RLRC_STAGE_DATA_DIR` (read-only bind) is tried first, see `slurm_jobs/README.md`.
+#
+# /////////////////////////////////////////////////
+
+defaults:
+  # ....multirun default.............................
+  # - /multirun_base
+  - /multirun_named_subdir
+  # - /multirun_base_sequential # one trial at a time per process (no Joblib)
+  # ....experiment main..............................
+  - /main_experiments/robotic_3d_env/ICRA2026@_global_: robotic_3d_env_main_exp_RLRP-757_husky-F2c-obsD6-online
+  - /dynamics_model@ms_model: B_ms2ms_m3_deterministic
+  # ....simulation mode..............................
+  - override /simulation_mode: single_agent_flatten_headless # alt: single_agent_flatten_human
+  # ....pipeline.....................................
+  - override /pipeline: robotic_3d_env_full_pipeline_multirun
+  - _self_
+
+trial_nb: 1
+
+overrides:
+  experiment: ${experiment_super}/M3-F50
+
+# RLRP-760 S3: compounded SELF-FED (closed-loop) horizon-hopped forecast eval.
+# MS->MS only (E2E-TCN / M3 / TBM / MTM-Pro): the collector fail-fasts on any
+# non-`AbstractMS2MSForecast` model, so this stays OFF in the shared pipeline cfg.
+pipeline:
+  # RLRP-824: single-step store (HDF5-cached, (H,F)-independent) + lazy (H, W) window gather.
+  data_manager: dataloader
+  steps:
+    test_rollout_selffed_forecast: true
+  test_rollout_selffed_forecast:
+    # F > H (FR14): `plan` is the ONLY supported conditioning on the asymmetric window.
+    future_action_conditioning: plan
+    # null -> falls back to deploy.target_experiment.ground_truth_feed_warmup_steps (F2c)
+    warmup_steps: null
+
+ms_model:
+
+  history_len: ${A_trj_len.HI}
+  horizon_len: ${A_trj_len.HO}
+
+  # Setup 1 (ULH): Trainable params: 5,103,188 (ModelTrainer.print_model_summary_once basis) --
+  # the operator's 5.1 M robotic-3D budget (2026-09-16: ~equal budget for every model of a dataset,
+  # hence the two M3 realisations use DIFFERENT widths: shared 2178 here vs literal 678; the Husky
+  # E2E-TCN keeps its main-experiment hid 379 = 5,066,210).
+  # (`profile_ulh_training_step.py --datasets husky --model m3 --fit-hid-size 5100000`)
+  #
+  # per_horizon_heads: true (literal {T_j}, hid 678) at F=50 = 28.6 M params, 579 MB peak CUDA,
+  # +17 ms Adam per step (FR15 profiling gate): fits, but it is ~50x the parameter budget of the
+  # other Husky models; the shared net keeps the per-dataset budget comparable.
+  # ... Horizon-indexed MLP ..........
+  per_horizon_heads: false
+  num_layers: 3
+  hid_size: 2178
+
+  # ... MS head ..........
+  ms_head_num_layers: 2
+
+  # RLRP-824 FR15 profiling gate, Husky row (Jetson Orin, jetson_clocks on, governor performance,
+  # B=300, H1/F50, production lazy path): the per-horizon Python LOOP dominates every dataset row
+  # (~4.7 ms per horizon step, independent of width: shared hid 678 234 ms/batch, shared hid 2052
+  # 258 ms/batch) => GO for the batched family evaluation (allclose to the loop, same weights).
+  vectorized_family_forward: true
+  # AMP was a NO-GO on the dispatch-bound LOOP (bf16 0.86x) but is the GO knob on the vectorized
+  # forward (`--knobs m3-vectorized`, Husky row, B=300, hid 2052): loop fp32 259 ms -> vectorized
+  # fp32 209 ms (1.24x) -> tf32 113 ms (2.29x) -> bf16 110 ms (2.36x), finite loss.
+  # Budget-width (hid 2178) bf16 numbers: see the plan artifact, *batch-size scaling (budget widths)*.
+  mixed_precision: bf16
+
+  activation_fn_cfg:
+    _target_: torch.nn.GELU
+
+  feature_geometry:
+    loss_weight: 1.0
+    loss_objective: chordal # Options: geodesic (default), chordal, null (disable)
+    auto_weighting: false
+  internal_orientation:
+    representation: quaternion # Options: quaternion, quaternion_legacy
+
+# RLRP-824 FR15: `num_workers > 0` measured NO-GO as a speed knob (gather 3.0 -> 0.9 ms of
+# 234 ms/batch, 1.00x); workers remain legal on this path for HDF5-lazy stores only.
+mbrl_lib:
+  dataloader:
+    num_workers: 0
+
+A_trj_len: ???
+
+# ....Multirun sweep...............................
+hydra:
+  mode: MULTIRUN
+  sweeper:
+    params:
+      trial_nb: range(1,5)
+
+      # Asymmetric ULH window: H=1 (the paper's single Markov state o_t), F=50 forecast.
+      A_trj_len: choice({HI:1,HO:50})

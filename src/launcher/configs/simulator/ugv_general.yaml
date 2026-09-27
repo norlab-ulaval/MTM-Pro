@@ -1,0 +1,129 @@
+name: "ugv_general"
+
+# Note: see 'dataset_sanitize_pre_processing.py' for dataframe label
+#   and 'robotic_trajectory_dataclass.py' for field name.
+# - position (world frame): pos_x pos_y pos_z
+# - linear velocity: l_vel_x l_vel_y l_vel_z
+# - attitude: quat_w quat_x quat_y quat_z
+# - angular velocity: a_vel_x a_vel_y a_vel_z
+# - control: steering speed
+
+flat_container_to_nested:
+  _target_: pipeline.pipeline_utils.robotic_env_pipeline_utils.ugv_trajectory_dataclass.UGVFlatContainerToNested
+
+deploy_rollout_post_processing:
+  _target_: pipeline.pipeline_utils.robotic_env_pipeline_utils.train_and_deploy_utils.Robotic3DDeployRolloutPostprocessing
+  device: ${device}
+
+# RLRP-736 S2.3: per-environment feature handler selection (mirrors the Hydra
+# `_target_` mechanism above). Specialized robotic-3D UGV builder: quaternion
+# attitude handling (UNIT_NORM + geodesic loss) + `command.*` bounded controls
+# and the `dt` time base. Absent key -> `build_default_scalar_handler`.
+feature_handler:
+  _target_: tools.feature_handling_tools.env_handlers.build_ugv_handler
+
+data:
+  original_timestamps_label: timestamp_ns
+  # Unit of the `original_timestamps_label` column in the source CSV files.
+  # Allowed values: "s" | "ms" | "us" | "ns". MANDATORY.
+  # The preprocessing pipeline (`online_pre_processing`) builds a 100 Hz grid
+  # in SECONDS, so the raw timestamp column must be scaled to seconds first.
+  # Husky / AnonLab UGV CSVs export ROS2 native nanosecond integers
+  # (e.g. `timestamp_ns = 1778868841838105088`) → `ns`. Setting this to `s`
+  # would request a ~10^13 element np.arange and SIGKILL the process.
+  original_timestamps_unit: ns
+  # Target frame rate (Hz) used by `online_pre_processing` to resample
+  # the per-trajectory dataframe onto an evenly-spaced time axis (in
+  # seconds). Set to `null` to skip resampling entirely (i.e., keep the
+  # source dataframe timestamps untouched).
+  target_frame_rate: 10 # in hz
+  force_dataset_fps_rescaling: false # <--
+  # Dataset frame-rate sub-scaling method used by `online_pre_processing`
+  # (RLRP-742). Allowed values:
+  #   - decimate    : keep one measured row every `n` rows (integer down-sampling).
+  #                   Preserves each surviving row's attitude<->angular-velocity
+  #                   pair exactly (recommended for robotic state). Down-sampling
+  #                   only; non-integer ratios round to the nearest stride (warns).
+  #                   Surviving `timestamp_ns` instants are kept (rescaled to
+  #                   seconds), never fabricated.
+  #   - interpolate : legacy per-column linear interpolation onto an even grid.
+  #                   Breaks the attitude<->angular-velocity relationship; use only
+  #                   when up-sampling is required.
+  subscaling_kind: decimate
+  # RLRP-758: per-channel native velocity frames (mandatory override in each
+  # concrete dataset config). `linear`/`angular` may differ (e.g. husky
+  # linear=world, angular=body).
+  linear_velocity_frame: ???
+  angular_velocity_frame: ???
+
+  # RLRP-753 (ruling `D-axis`): world-frame gravity axis used to project the
+  # body-frame gravity direction `g_hat^B = R(q)^T g^W in S^2` at ingestion
+  # (`quaternion_to_body_gravity`). Only the DIRECTION matters (the vector is
+  # unit-normalized), so `[0, 0, -9.81]` is equivalent to `[0, 0, -1]`.
+  # `husky_adverse` is a z-up inertial frame, so this default is a no-op; the
+  # key exists so a future non-z-up dataset cannot be silently mis-projected
+  # (risk `R-N6`). Only read when `gravity.{x,y,z}` is declared in `obs_dims`.
+  gravity_world_axis: [ 0.0, 0.0, -1.0 ]
+
+  # Phase E.6 (RLRP-624) — extra directory roots to crawl recursively
+  # for ``*.csv`` files during the dataset pre-sanitization stage
+  # (``python3 src/tools/dataset_tools/sanitize_uav.py``). This makes ``sanitize_dataset``
+  # process every CSV in the dataset, not only the subset listed under
+  # ``trajectories`` / ``test_InD_trajectory`` / ``test_OOD_trajectory``
+  # of the active simulator config (e.g. ``neurobem_quarter_dataset.yaml``).
+  #
+  # Paths are resolved as follows, in order:
+  #   1. absolute path → used as-is;
+  #   2. existing path relative to CWD → used as-is;
+  #   3. otherwise → resolved relative to ``${DN_PROJECT_PATH}``.
+  #
+  # Operators run the sanitization stage locally once per dataset drop
+  # (see ``slurm_jobs/README.md`` HPO section), then ``rsync`` the
+  # resulting ``*.pre_sanitized`` markers to HPC.
+  sanitization_dataset_roots:
+    - data/external_data/ugv/husky_adverse/adverse_test_set
+    - data/external_data/ugv/husky_adverse/nominal_test_set
+    - data/external_data/ugv/husky_adverse/train
+
+# CSV header reference:
+#   timestamp_ns,
+#   x,y,z,
+#   linear_vel_x, linear_vel_y, linear_vel_z,
+#   qx, qy, qz, qw,
+#   angular_vel_x, angular_vel_y, angular_vel_z,
+#   cmd_linear_vel, cmd_angular_vel,
+#
+obs_dims:
+  - 'linear_vels.x'
+  - 'linear_vels.y'
+  - 'linear_vels.z'
+  - 'attitude.w'
+  - 'attitude.x'
+  - 'attitude.y'
+  - 'attitude.z'
+  - 'angular_vels.x'
+  - 'angular_vels.y'
+  - 'angular_vels.z'
+
+act_dims:
+  - 'command.steering'
+  - 'command.speed'
+  - 'timestamps.delta_stamps'
+
+# Physical bounds on observation dimensions.
+# ``angular_velocity_max_rad_s`` is the saturation cap (rad/s) applied to the
+# angular-velocity observation magnitude ``|omega| = norm(angular_vels.{x,y,z})``
+# before attitude integration / as a model-prediction plausibility bound. It is
+# an *observation*-space property (not action-related). Empirically derived from
+# the full ``husky_adverse`` dataset (max 1.44 rad/s) with ~2.1x headroom.
+# (Audit: .junie/ai_artifact/reports/max_angular_velocity_default_audit_20260613.md)
+obs_physical_bounds:
+  angular_velocity_max_rad_s: 3.0
+
+
+test_time_rollout_categories:  # TODO
+
+  husky_adverse:
+    S: 152
+    M: 336
+    L: 812

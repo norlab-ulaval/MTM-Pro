@@ -1,0 +1,79 @@
+# /////////////////////////////////////////////////////////////////////////////////////////////////
+#
+#                          Neurobem Adverse Dataset (1/10 dataset)
+#
+# Randomly down-sampled (without replacement) to 1/10 of the full dataset items.
+#
+# Number of train/val trajectories: 22 (out of 224)
+# Number of test InD trajectories:  1 (out of 9)
+# Number of test OoD trajectories:  1 (out of 14)
+#
+# Total train_val_trajectories trajectory length: 21404
+#
+# test_InD_trajectory length:
+#    0: 2937
+#
+# Total test_InD_trajectory trajectory length: 2937
+#
+# test_OOD_trajectory length:
+#    0: 2613
+#
+# Total test_OOD_trajectory trajectory length: 2613
+#
+# /////////////////////////////////////////////////////////////////////////////////////////////////
+name: "neurobem_adverse_tenth_dataset"
+
+defaults:
+  - quadcopter_general
+  # - /simulator/softwinsorization@normalizer: neurobem_relaxed
+  # - /simulator/softwinsorization@normalizer: neurobem_strict_RLRP-540-V0B
+  - /simulator/softwinsorization@normalizer: neurobem_default
+  - _self_
+
+dataset_name: neurobem_adverse
+data_path: data/external_data/neurobem_adverse/
+
+obs_are_dt_derivatives: true
+obs_time_is_delta_time: true
+
+
+data:
+  label: "Neurobem adverse (1/10 of full dataset)"
+  linear_velocity_frame: body # (CRITICAL)
+  angular_velocity_frame: body # (CRITICAL)
+  trajectories:
+    # ....From the train directory...........................
+    - trajectory_name: train_val_set/battery_test_06_2021-02-05-14-02-47_seg_1
+    - trajectory_name: train_val_set/battery_test_13_2021-02-05-14-04-32_seg_1
+    - trajectory_name: train_val_set/battery_test_19_2021-02-05-16-19-10_seg_2
+    - trajectory_name: train_val_set/lemniscate_06_2021-02-05-16-06-45_seg_1
+    - trajectory_name: train_val_set/lemniscate_10_2021-02-05-16-10-53_seg_1
+    - trajectory_name: train_val_set/lemniscate_18_2021-02-18-17-05-14_seg_3
+    - trajectory_name: train_val_set/lemniscate_29_2021-02-23-10-48-03_seg_3
+    - trajectory_name: train_val_set/lemniscate_30_2021-02-23-10-50-42_seg_1
+    - trajectory_name: train_val_set/lemniscate_45_2021-02-23-17-27-24_seg_1
+    - trajectory_name: train_val_set/linear_oscillation_01_2021-02-03-16-10-37_seg_1
+    - trajectory_name: train_val_set/linear_oscillation_11_2021-02-03-16-54-28_seg_1
+    - trajectory_name: train_val_set/linear_oscillation_17_2021-02-18-16-43-54_seg_1
+    - trajectory_name: train_val_set/linear_oscillation_26_2021-02-18-16-53-35_seg_1
+    - trajectory_name: train_val_set/racetrack_05_2021-02-05-15-46-49_seg_3
+    - trajectory_name: train_val_set/racetrack_16_2021-02-05-16-31-14_seg_4
+    - trajectory_name: train_val_set/random_points_06_2021-02-23-17-45-47_seg_2
+    - trajectory_name: train_val_set/random_points_20_2021-02-23-19-15-11_seg_1
+    - trajectory_name: train_val_set/satellite_11_2021-02-23-19-45-06_seg_1
+    - trajectory_name: train_val_set/slanted_circle_02_2021-02-03-16-58-13_seg_2
+    - trajectory_name: train_val_set/slanted_circle_12_2021-02-05-15-04-42_seg_3
+    - trajectory_name: train_val_set/slanted_circle_37_2021-02-18-18-03-06_seg_1
+    - trajectory_name: train_val_set/wobbly_circle_02_2021-02-03-13-43-38_seg_2
+  test_InD_trajectory:
+    - trajectory_name: nominal_test_set/lemniscate_28_2021-02-23-10-48-03_seg_2
+      category: S
+  test_OOD_trajectory:
+    - trajectory_name: adverse_test_set/racetrack_20_2021-02-18-17-26-00_seg_1
+      category: S
+
+# global_interval_idx: [0, 10001]
+time_space:
+  bound: ???
+  granularity: ???
+# explorable_space: [[0, 8001]] # Not used in robotic env for now

@@ -1,0 +1,33 @@
+name: "neurobem_3x_named_trajectories"
+
+defaults:
+  - quadcopter_general
+  - _self_
+
+dataset_name: neurobem
+data_path: data/external_data/long_horizon/data/neurobem/
+
+obs_are_dt_derivatives: true
+obs_time_is_delta_time: true
+
+
+data:
+  label: "Neurobem (12x named trajectories)"
+  linear_velocity_frame: body
+  angular_velocity_frame: body
+  trajectories:
+    - trajectory_name: test/ellipse
+    - trajectory_name: test/lemniscate_2
+    - trajectory_name: test/melon_2
+  test_InD_trajectory:
+    - trajectory_name: test/lemniscate_3
+      category: M
+  test_OOD_trajectory:
+    - trajectory_name: test/race_track_2
+      category: S
+
+# global_interval_idx: [0, 10001]
+time_space:
+  bound: ???
+  granularity: ???
+# explorable_space: [[0, 8001]] # Not used in robotic env for now

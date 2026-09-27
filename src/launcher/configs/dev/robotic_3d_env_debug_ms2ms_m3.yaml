@@ -1,0 +1,124 @@
+#
+# MS2MS forecast baseline quick dev/debug setup on the robotic 3D env -- M3
+# (`B_ms2ms_m3_deterministic`). Exercises the RLRP-824 ASYMMETRIC window (`history_len: 1`,
+# `horizon_len > history_len`) on the `dataloader` data path (HDF5-cached single-step store),
+# plan-conditioned only (FR14), with the MS->MS forecast eval steps ON, in the ULH realisation
+# (`per_horizon_heads: false` shared net + `vectorized_family_forward: true`). Keys under `ms_model`
+# are M3 constructor kwargs (`per_horizon_heads`, `vectorized_family_forward`, `ms_head_num_layers`,
+# `residual_form`); E2E-TCN has its own file (`robotic_3d_env_debug_ms2ms_e2e_tcn.yaml`,
+# `dilations` / `kernel_size` are E2E-TCN-only). Do not reuse for MTM-Pro / CP families -- see
+# `robotic_3d_env_debug_mtm_pro.yaml` and `robotic_3d_env_debug_cp_ar_tcn.yaml`.
+# `robotic_3d_env_debug.yaml` stays the general, model-agnostic quick setup. Math-env twin:
+# `math_env_debug_ms2ms_m3.yaml`.
+#
+# Pitfalls this file pre-empts (RLRP-824 Step 6 smoke runs):
+#   - `horizon_len > history_len` is REJECTED on `data_manager: replay-buffer` and on any model
+#     outside the MS->MS family (output window == `history_len` there);
+#   - `vectorized_family_forward: true` is rejected with `per_horizon_heads: true`;
+#   - `pipeline.test_rollout_*_forecast.future_action_conditioning` must be `plan` on `F > H`;
+#   - the HDF5 store is `(H, F)`-independent: ONE cache per `<environment.name>/source_size=..`
+#     serves every window shape (shared with the E2E-TCN file above).
+#
+# Usage:
+#   >>> python3 robotic_3d_env_main.py +dev@_global_=robotic_3d_env_debug_ms2ms_m3
+#   >>> python3 robotic_3d_env_main.py +dev@_global_=robotic_3d_env_debug_ms2ms_m3 ms_model.per_horizon_heads=true ms_model.vectorized_family_forward=false  # literal (paper) realisation
+#
+
+defaults:
+  # Note: use "... /simulator..." instead of "... simulator..." since dev/*.yaml is called from
+  #  config group 'dev' which is on same lvl as config group 'environment'
+  - override /simulator@environment: pi_tcn_3x_trajectories # Dev ⚒︎
+  # - override /simulator@environment: neurobem_3x_named_trajectories # Dev ⚒︎
+  # - override /simulator@environment: husky_adverse_mini_two_dataset # Dev ⚒︎
+  # ....MS2MS family / M3............................
+  - override /dynamics_model@ms_model: B_ms2ms_m3_deterministic # ★ M3 (H=1 / F=8)
+  - _self_
+
+# ....Debug override...............................
+# seed: 33333
+debug_mode: false
+
+overrides:
+  experiment: "DEBUG"
+
+pipeline:
+  # RLRP-786: dev/debug overlay -> every training-step diagnostic ON (the experiment / HPO pipelines run `fast`).
+  performance_mode: dev
+  # RLRP-824: the lazy window path is REQUIRED for `horizon_len > history_len`.
+  data_manager: dataloader
+  # Single-step HDF5 store cache (dataloader path only). Saving is cheap (O(T) single-step rows);
+  # `force_regenerating_saved_ms_hdf5: true` re-ingests the CSVs on every run.
+  enable_ms_hdf5_saving_to_data_dir: true
+  force_regenerating_saved_ms_hdf5: false
+  ms_hdf5_allow_generate: true # false -> cache miss fails fast (staged SLURM GPU jobs, plan R10)
+  dataloader:
+    normalizer_fit_max_windows: 4096
+    boundary_mode: pad
+  # Legacy materialized MS replay buffer knobs (NOT used on the dataloader path, kept muted).
+  enable_ms_replaybuffer_saving_to_data_dir: false # ★ <--
+  force_regenerating_saved_ms_replaybuffer: false # ★ <--
+
+  steps:
+    single_step_model_learning: false # <--
+    multi_step_model_learning: true
+    metric_step: false # <--
+    test_rollout_InD: true
+    test_rollout_OOD: true
+    test_rollout_openloop_forecast: true # RLRP-728 per-horizon open-loop forecast eval
+    test_rollout_selffed_forecast: true # RLRP-760 compounded self-fed forecast eval
+  # FR14: `plan` is the ONLY legal conditioning on the asymmetric window.
+  test_rollout_openloop_forecast:
+    future_action_conditioning: plan
+  test_rollout_selffed_forecast:
+    future_action_conditioning: plan
+    warmup_steps: null
+  plot:
+    show_environment_plot: false
+
+  tensorboard:
+    batch_callback_execute_every_n: 10 # Option: <int>, null -> disabled batch callback
+    clear_tmp_directory_run_artifact_on_teardown: false
+
+hparam_optimizer:
+  sweep_optimizer_dryrun: false
+
+UDER:
+  # Constant batch size ONLY on the dataloader path (FR12: init_value == limit, gamma irrelevant
+  # for `single_global_loop`, must be 1.0 for `pber`).
+  batch_size:
+    init_value: 500
+    limit: 500
+    gamma: 1.0
+  uder_num_epochs: 1
+  num_epochs_train_model: 2
+  final_max_num_epochs_train_model: 2
+
+# training_common:
+#   model_lr: 1e-4 # Default 1e-4 ★
+
+# torch_backend: # process-global CUDA knobs (single owner, applied once at app setup)
+#   cuda_high_precision_float32: false # false -> TF32 on ("medium" matmul precision), A100 speed opt-in
+#   cudnn_benchmark: true
+
+# one_dim_transition_model:
+#   normalize: false # ⚠️
+#   normalize_double_precision: null  # Auto-detected from model precision; on the dataloader
+#                                     # path it also fixes the SOURCE buffer / store dtype.
+
+ms_model: # <- OVERRIDES (M3 keys)
+  # model_use_double_precision: false # ⚠️
+  enable_future_action_plan_conditioning: true # ★★★ required for F > H (FR14)
+  mixed_precision: null # null | bf16 | fp16 (autocast around the Lightning steps)
+
+  # ....Asymmetric window (W = max(H, F) = F, `_window_lead` = 0)....
+  history_len: 1
+  horizon_len: 8
+
+  # .... M3 realisation ..............................
+  per_horizon_heads: false # false -> shared net (F-independent params); true -> F-1 sibling MLPs
+  vectorized_family_forward: true # one batched shared-net call instead of the F-step loop
+
+  # .... Model architecture ..........................
+  num_layers: 1
+  hid_size: 32
+  ms_head_num_layers: 1

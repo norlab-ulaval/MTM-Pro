@@ -1,0 +1,3 @@
+rendering: 'headless_fast'
+
+flatten_obs: true

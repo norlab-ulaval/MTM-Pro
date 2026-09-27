@@ -1,0 +1,85 @@
+# @package _global_
+
+# /////////////////////////////////////////////////
+#
+#                        ★
+#                    CoRL 2026
+#       Configuration for experiment RLRP-757
+#                  experiment: UGV
+#
+# Procedure:
+#   1. Select specialized multirun cfg in math_env_main_multirun.yaml
+#   2. Execute:
+#       $ python3 launcher/robotic_3d_env_main_multirun.py --config-name=multirun-lstm --config-dir=launcher/configs/multirun_overrides/robotic_3d_env/RLRP-757-Neurobem-F1
+#
+#   Override nb of trial by adding: --multirun "trial_nb=range(2)"
+#
+# For debuging, add: +dev@_global_=math_env_debug
+#
+# Note:
+#   n_jobs is set using HPO_N_JOBS environment variables in slurm script
+#
+# /////////////////////////////////////////////////
+
+defaults:
+  # ....multirun default.............................
+  # - /multirun_base
+  - /multirun_named_subdir
+  # ....experiment main..............................
+  - /main_experiments/robotic_3d_env/ICRA2026@_global_: robotic_3d_env_main_exp_RLRP-757_neurobem-F1
+  - /dynamics_model@ms_model: B_lstm_deterministic
+  # ....simulation mode..............................
+  - override /simulation_mode: single_agent_flatten_headless # alt: single_agent_flatten_human
+  # ....pipeline.....................................
+  - override /pipeline: robotic_3d_env_full_pipeline_multirun
+  - _self_
+
+trial_nb: 1
+
+overrides:
+  experiment: ${experiment_super}/LSTM
+
+ms_model:
+
+
+  history_len: ${A_trj_len.HI}
+  horizon_len: ${A_trj_len.HO}
+
+
+  # Setup 1: # Trainable params: 5.1 M
+  # ... Encoder ..........
+  num_layers: 3
+  hid_size: 476
+
+  # ... Decoder ..........
+  decoder_num_layers: 1 # Options: int > 0, -1 match num_layers
+  decoder_ss_head_num_layers: 1
+  decoder_hid_size: 544
+
+  dropout: 0.0
+  activation_fn_cfg:
+    _target_: torch.nn.GELU
+
+  feature_geometry:
+    loss_weight: 1.0
+    loss_objective: chordal # Options: geodesic (default), chordal, null (disable)
+    auto_weighting: false
+  internal_orientation:
+    representation: quaternion # Options: quaternion, quaternion_legacy
+
+
+A_trj_len: ???
+
+# ....Multirun sweep...............................
+hydra:
+  mode: MULTIRUN
+  sweeper:
+    params:
+      trial_nb: range(1,5)
+
+      # A_trj_len: choice({HI:20,HO:20},{HI:20,HO:1},{HI:20,HO:5})
+      A_trj_len: choice({HI:20,HO:10})
+      # A_trj_len: choice({HI:10,HO:5})
+      # A_trj_len: choice({HI:30,HO:15})
+
+

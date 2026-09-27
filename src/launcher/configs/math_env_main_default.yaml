@@ -1,0 +1,371 @@
+#
+# Hydra launch command:
+#   $ python3 launcher/math_env_main.py --config-name=math_env_main_default
+#
+
+defaults:
+  - /global_config
+  # ....pipeline.....................................
+  - /pipeline: math_env_full_pipeline
+  # ....simulation mode..............................
+  - /simulation_mode: single_agent_flatten_human # alt: single_agent_flatten_headless
+  # ....algorithm....................................
+  - /algorithm/experience_replay@UDER: PBER_lr_warmup_disabled
+  # - /algorithm/experience_replay@UDER: PBER
+  # - /algorithm/experience_replay@UDER: PBUDER
+  # ....Environment and Data.........................
+  # Options: lorenz_v1, lorenz_v1b, lorenz_v2, lorenz_v3, lorenz_v1b_single_initial_condition, lorenz_v1b_noise_free_single_initial_condition, lorenz_v1b_noise_free, lorenz_v1b_noisy, lorenz_v1b_noisier
+  # - /simulator@environment: lorenz_v1b_noise_free
+  # - /simulator@environment: lorenz_v1b
+  # - /simulator@environment: lorenz_v1b_1x_single_initial_condition_noise_free
+  # - /simulator@environment: lorenz_v1b_1x_single_initial_condition # ★
+  # - /simulator@environment: lorenz_v1b_3x_single_initial_condition # Cautious, this is 3x the same
+  # - /simulator@environment: lorenz_v1b_noisier
+  # - /simulator@environment: lorenz_v1b_noisy
+  # - /simulator@environment: lorenz_v5_3x_dif_init_condition # ★★★
+  # - /simulator@environment: lorenz_v5_noise_free
+  # - /simulator@environment: lorenz_v5
+  # - /simulator@environment: lorenz_v5_noisier
+  # - /simulator@environment: lorenz_v5_noisy
+  # - /simulator@environment: lorenz_v6_3XinitC_OoD=burst_noise
+  - /simulator@environment: lorenz_v6_5XinitC_OoD=burst_noise # ★★★
+  # - /simulator@environment: lorenz_v6_10XinitC_OoD=burst_noise
+  # - /simulator@environment: linear_spiral_v1_1x_single_initial_condition_noise_free
+  # - /simulator@environment: linear_spiral_v1_1x_single_initial_condition
+  # - /simulator@environment: linear_spiral_v1
+  # - /simulator@environment: linear_spiral_v1_noisy
+  # - /simulator@environment: wavy_projection_system_v1
+  # - /simulator@environment: wavy_projection_system_v1_single_init
+  # - /simulator@environment: sombrero_projection_system_v1
+  # - /simulator@environment: sombrero_projection_system_v1_single_init
+  # - /simulator@environment: damped_harmonic_oscillator_v1
+  # - /simulator@environment: simple_limit_cycle_system_van_der_pol_v1
+  # - /simulator@environment: rossler_v1_noise_free
+  # - /simulator@environment: rossler_v1
+  # - /simulator@environment: rossler_v1_noisier
+  # - /simulator@environment: rossler_v2
+  # - /simulator@environment: rossler_v3
+  # - /simulator@environment: rossler_v4
+  # - /simulator@environment: rossler_v4_noisier
+  # - /simulator@environment: rossler_v4_noise_free
+  # - /simulator@environment: rossler_v5
+  # - /simulator@environment: aizawa_v1
+  # - /simulator@environment: linear_debug_system # Dev ⚒︎
+  # ....SS model (baseline)...........................
+  # - /dynamics_model@ss_model: B_fully_deterministic_mlp
+  # - /dynamics_model@ss_model: B_gaussian_mlp
+  # - /dynamics_model@ss_model: B_gaussian_mlp_ensemble
+    # ....MS model (baseline)...........................
+  # - /dynamics_model@ms_model: B_basic_ensemble
+  # - /dynamics_model@ms_model: B_fully_deterministic_mlp
+  # - /dynamics_model@ms_model: B_gaussian_mlp
+  # - /dynamics_model@ms_model: B_gaussian_mlp_ensemble
+  # - /dynamics_model@ms_model: B_tcn_deterministic # ★
+  # - /dynamics_model@ms_model: B_tcn_probabilistic
+  # - /dynamics_model@ms_model: B_lstm_deterministic # ★
+  # - /dynamics_model@ms_model: B_lstm_probabilistic
+  # - /dynamics_model@ms_model: B_gru_deterministic # ★
+  # - /dynamics_model@ms_model: B_gru_probabilistic
+  # - /dynamics_model@ms_model: B_mlp_ar_deterministic # ★
+  # - /dynamics_model@ms_model: B_mlp_ar_probabilistic
+  # - /dynamics_model@ms_model: B_ms2ss_deterministic # ★
+  # - /dynamics_model@ms_model: B_ms2ss_probabilistic
+  # ....MS model......................................
+  - /dynamics_model@ms_model: tw_ms2ss_dh_pme
+  # - /dynamics_model@ms_model: ms2ms2ss_ar_temporal_mixture_pme
+  # - /dynamics_model@ms_model: ms2ms2ss_ar_temporal_mixture_sampling_free_pme
+  # - /dynamics_model@ms_model: tw_ms2ss_dh_mix_siw_mp_pme
+  # - /dynamics_model@ms_model: tw_ms2ss_dh_mix_vi_pme
+  # - /dynamics_model@ms_model: tw_ms2ss_sh_mix_pme
+  # - /dynamics_model@ms_model: tw_ms2ss_sh_mppi_pme
+  # - /dynamics_model@ms_model: tw_ms2ms2ss_mask_dm
+  # - /dynamics_model@ms_model: tw_ms2ms2ss_mask_dm_ar
+  # - /dynamics_model@ms_model: tw_ms2ms2ss_mask_pm
+  # - /dynamics_model@ms_model: tw_ms2ms2ss_mask_pme
+  # - /dynamics_model@ms_model: tw_ms2ms2ss_mask_pme_ar
+  # - /dynamics_model@ms_model: tw_ms2ms2ss_mask_pme_v2
+  # - /dynamics_model@ms_model: tw_ae_v1_ms_pme
+  # - /dynamics_model@ms_model: tw_ae_v2_ms_pme
+  - _self_
+
+# ====Experiment===================================
+algorithm:
+  name: 'MS_model'
+
+overrides:
+  # experiment: 'default'
+  experiment: "base"
+
+# comment: "" # Mute when not used
+
+deploy:
+  val_rollout:
+    # Rollout performed from validation trajectories
+    replay_buffer_ratio: 0.1
+    trajectory_length_ratio: 0.35
+  target_experiment:
+    tutor_and_release: true # <--
+    ground_truth_feed_warmup_steps: 100
+    compounded_predictions_score: true # Only affect tensorboard callback + ERLL algo deploy stage
+  model_runtime:
+    next_state_deterministic_selection: true # ⚠️
+    next_state_sampling_size: 1 # if next_state is probabilistic
+  # RLRP-773: opt-in per-epoch-checkpoint test-time rollouts (requires
+  # `training_common.force_checkpoint_interval` set on the training run that produced the
+  # `epoch_checkpoints/` tree). Default OFF => legacy single deploy, zero extra cost.
+  epoch_checkpoint_rollouts:
+    enable: false      # Options: bool. Run test-time rollouts for each epoch checkpoint
+    epoch_stride: null # Options: int >= 1 or null => every discovered checkpoint
+    epochs: null       # Options: list[int] or null => no explicit subset (last epoch always kept)
+
+  # (Priority) ToDo(RLRP-831): refactor-out >> next bloc ↓↓ to 'src/launcher/configs/global_config.yaml'
+  # RLRP-785 (A3): opt-in per-step benchmark instrumentation of the deploy test-time rollout.
+  # Default OFF => no benchmark kwargs are forwarded to the rollout, so it stays byte-identical.
+  # RLRP-803 item 7.5 -- `enabled: false` is an INTENTIONAL OPT-IN, NOT an oversight: the
+  # `deployable_latency` timing pass inserts an explicit per-step `torch.cuda.synchronize()`,
+  # so switching it on by default would perturb the runtime (and the async pipelining) of EVERY
+  # ordinary deploy run. Enable it only for a run whose purpose IS the measurement.
+  benchmark:
+    enabled: false                  # Options: bool. Master switch (default OFF -- deliberate opt-in)
+    levels: [control_loop_step]     # Options: list of model_call, deployer_step, control_loop_step
+    timing_pass: deployable_latency # Options: deployable_latency (headline), device_time
+    discard_warmup_steps: 0         # Options: int >= 0. Timer warm-up steps dropped before reduction
+    # RLRP-803 (item 1 / gate `V10`): keep the per-step latency population in the artifact so the
+    # plotter draws TRUE quartiles and the taint filtering can be evidenced (untainted p95/p99 vs
+    # the unfiltered one). Default OFF -- it grows the persisted artifact by one float per step.
+    keep_raw_samples: false         # Options: bool. Persist the raw per-step latency population
+    max_raw_samples: 10000          # Options: int >= 1. Cap (uniform time-ordered decimation above)
+
+# ====Environment and Data=========================
+environment:
+  env_rnd_instances: 1 # ⚠️  Nb time to resample a environment configuration
+  # obs_are_dt_derivatives: false # ⚠️
+  # obs_time_is_delta_time: false # ⚠️
+  global_interval_idx: [0, 10001]
+  time_space:
+    bound: [0,60]
+    # bound: [0,40]
+  explorable_space: [[0, 10001]]
+  
+  # (NICE TO HAVE) ToDo: refactor out to a math env global cfg file
+  deploy_rollout_post_processing:
+    _target_: pipeline.pipeline_utils.math_env_pipeline_utils.train_and_deploy_utils.MathEnvDeployRolloutPostprocessing
+    device: ${device}
+
+
+source_replay_buffer:
+  source_size: all # Options: int or all i.e., all samples from offline source
+  val_ratio: 0.1
+  original_dataset_size: ???
+
+# ====Algorithm====================================
+# Note: use "UDER" key to simplify experiment even if using "PBER" as algo ★
+UDER: # Overrides
+  batch_size: # See 'notebooks/uder_related.ipynb'
+    # init_value: 32 # ★ small is better for VI
+    # init_value: 300
+    init_value: 500
+    # gamma: 1.05 # For 200->500 in 20 epochs or 200->600
+    # gamma: 1.12 # For 32->264 in 20 epochs
+    # gamma: 1.19 # For 32->1000 in 20 epochs
+    # gamma: 1.09 # For 200->400 in 10 epochs
+    # gamma: 1.09 # For 300->600 in 10 epochs
+    gamma: 1.16 # For 300->1000 in 10 epochs
+    # gamma: 1.26 # For 200->500 in 5 epochs
+    # limit: 300
+    limit: 500
+    # limit: 1000
+  # uder_num_epoch_init_override: 5 # int, false => skip override, null => 'patience'
+  # # ↳ Warmup: Set init nb epoch to give multi-task weighting time to stabilize
+  uder_num_epochs: 10
+  # uder_num_epochs: 20
+  # uder_num_epochs: 40 # ★
+  # num_epochs_train_model: 100 # ★
+  # uder_num_epochs: 20 # ★
+  # num_epochs_train_model: 400 # ★
+  # num_epochs_train_model: 600 # ★
+  num_epochs_train_model: 800 # ★
+  # num_epochs_train_model: 1600
+  # num_epochs_train_model: 4000
+  # final_max_num_epochs_train_model: null # Options: int or null => patience threshold
+  final_max_num_epochs_train_model: 200 # Options: int or null => patience threshold
+  # ... Debug ..........
+  # uder_num_epochs: 4 # ★
+  # num_epochs_train_model: 8 # ★
+  # final_max_num_epochs_train_model: 5
+
+
+# ====Training=====================================
+training_common:
+
+  # NOTE (RLRP-824 consolidation): the process-global torch backend knobs (TF32 via
+  # `cuda_high_precision_float32`, `cudnn_benchmark`) live ONLY under the top-level `torch_backend`
+  # group (`global_config.yaml`) and are applied once by `R2S2RPipelineHydraApp.setup()`. The
+  # short-lived `training_common.cuda_backend` duplicate was removed (it re-wrote the same
+  # `torch.backends` flags at trainer setup and silently reverted `torch_backend.cudnn_benchmark`).
+  optimizer:
+    use_adam: false
+    # A8 (RLRP-783 follow-up): opt-in fused (CUDA) / capturable Adam that removes the
+    # per-parameter `torch.optim.optimizer._get_value(step).item()` device->host sync
+    # (`perf_RLRP-783_mtm_pro_models_code_optimization_plan_20260827.md`). Read via
+    # `OmegaConf.select(..., default=False)` so ABSENT/`false` => legacy single-tensor Adam.
+    # NOTE fused Adam is NOT bit-exact vs the legacy kernel and is CUDA-only (falls back to
+    # legacy off-CUDA); `adam_capturable` is the CUDA-family fallback. Sourced from the selected
+    # pipeline group via `${oc.select:pipeline.optimizer.adam_fused,false}`: the
+    # multirun/HPO/deploy/pipeline configs opt in (`pipeline.optimizer.adam_fused: true`); any
+    # pipeline that does not declare the key => `false` (legacy single-tensor Adam, unchanged).
+    adam_fused: ${oc.select:pipeline.optimizer.adam_fused,false}
+    # adam_capturable: false
+    # NAdam:
+    #   # momentum_decay: 0.91
+    #   # momentum_decay: 0.1
+    #   # momentum_decay: 0.075
+    #   momentum_decay: 0.05
+    #   # momentum_decay: 0.01
+    #   # momentum_decay: 0.004 # default
+    #   # momentum_decay: 0.001
+    #   decoupled_weight_decay: true # default: false. Set to True to get NAdamW
+    AdamW:
+      amsgrad: false # ★
+    # SGD:
+    #  momentum: 0.1
+    #  nesterov: true # Require dampening=0
+    #  dampening: 0.0
+  trainer_lr_schedule: # ToDo: experiment
+    # warmup:
+    #   steps: 5 # Maintain initial model_lr for <step> warmup epochs (0 to disable)
+    #   factor: 0.5 # Default: 1.0
+    cosine_annealing_lr:
+      T_max: null # T_max will be set to "num_epochs_train_model"
+      # T_max: 400
+      # T_max: 20
+      # eta_min: 1e-8
+      eta_min: 1e-30
+      # eta_min: 1e-10
+      # eta_min: 0 # Default: 0
+    exponential_lr:
+      # gamma: 0.5
+      # gamma: 0.7
+      # gamma: 0.8
+      # gamma: 0.88 # ★★★
+      # gamma: 0.91
+      # gamma: 0.93
+      # gamma: 0.95
+      # gamma: 0.97
+      gamma: 0.98 # ★
+      # gamma: 0.99 # ★★★
+      # RLRP-770 (option 3): opt-in auto-`gamma`. When `end_fraction` (0, 1) is set, `gamma` is
+      # IGNORED and derived per UDER pass as `end_fraction ** (1/(pass_num_epochs-1))` so the LR
+      # always lands on `end_fraction` of the pass restart height (removes the fixed-`gamma`
+      # frozen tail on long passes). Under Law-U the pass budget is auto-sized (RLRP-727 B2).
+      # end_fraction: 0.05
+    # lambda_lr:
+      # _target_: functools.partial
+      # func:
+      #   _target_: builtins.pow
+      # _args_: [0.95]  # Creates: lambda epoch: 0.95 ** epoch
+    # cyclic_lr:
+    #   base_lr: ${training_common.model_lr}
+    #   max_lr: 1e-3
+    #   step_size_up: 3
+    #   mode: "exp_range"
+    #   gamma: 0.8
+  # model_lr: 1.25e-3 # Watchout for gradient collapse!
+  # model_lr: 1.125e-3
+  # model_lr: 1.05e-3
+  # model_lr: 1e-3 # ★
+  # model_lr: 5e-4 # ★ <--
+  model_lr: 2.5e-4 # ★ <--
+  # model_lr: 1e-4 # Default 1e-4 ★ <--
+  # model_lr: 1e-5
+  # model_lr: 1e-6
+  model_wd: 1e-3
+  # model_wd: 1e-4 # Quadrocopter paper
+  # model_wd: 5e-5 # Default 5e-5
+  # model_wd: 1e-5
+  # model_wd: 1e-6
+  # model_wd: 1e-9
+  # model_wd: 0 # Disable
+  # patience: null # Early stopping Options: int or null ⚠️
+  patience: 100 # Early stopping Options: int or null (need to be greater than num_epochs_train_model/uder_num_epochs otherwise any uder_num_epochs can be cut short) ⚠️
+  improvement_threshold: 0.00000001 # Affect model saving & early stopping (Default 0.01) <--
+
+ss_training: ${training_common}
+ms_training: ${training_common}
+
+
+# ====Single-Step model============================
+one_dim_transition_model:
+  _target_: tools.mbrl_lib_tools.models.one_dim_tr_model_v2.OneDTransitionRewardModelV2
+  normalize: true
+  # Options: standard, standard_symmetric, standard_symmetric_innovation, winsorized, quantile
+  # Note (RLRP-761 S4): `standard_symmetric_innovation` scales the model TARGET by
+  #   the one-step INNOVATION instead of the state sigma. It requires a MULTISTEP
+  #   model; a single-step fit warns once and degrades to `standard_symmetric`.
+  normalizer_type: standard
+  # normalizer_kwargs:
+  #   # ....RLRP-761 S4 -- `standard_symmetric_innovation` only.......
+  #   # innovation_scale_mode: one_step_delta
+  #   #   # one_step_delta -> s = std(x[t+1] - x[t])                 (default)
+  #   #   # noise_floor    -> s = 1.4826 * MAD(2nd diff) / sqrt(6)   the IRREDUCIBLE
+  #   #   #                   high-frequency floor; a rare adverse excursion stays a
+  #   #   #                   large multiple of it instead of raising its own bar.
+  #   #   # explicit       -> use the `innovation_scale` vector below.
+  #   # innovation_scale_floor: 1e-6  # absolute lower bound on `s`, keeps the
+  #   #                               # transform finite on a constant / quantized dim.
+  #   # innovation_scale: null        # (in_size,) vector, REQUIRED by `explicit`.
+  #   # NOTE: needs a MULTISTEP model AND sequence structure; without it the
+  #   #   innovation is not observable and the type degrades to
+  #   #   `standard_symmetric` with a one-shot warning (it does NOT fail silently).
+  #   # clip_range: 5.0           # (standard only) Clip z-scored inputs to [-clip, +clip]. Default to null.
+  #   winsor_percentile: 0.05    # (winsorized only) percentile for winsorization
+  #   soft_clip_iqr_mult: 3.0    # (winsorized only) IQR multiplier for adaptive clip threshold
+  #   # n_bins: 1000              # (quantile only) number of quantile bins
+  #   # tail_policy: linear       # (quantile only) extrapolation policy for out-of-range values
+  # normalize_double_precision: null  # Auto-detected from model precision
+  # target_is_delta: false # ⚠️
+  # learned_rewards: false
+  num_elites: null
+
+# ====Feature loss-weight policy (RLRP-761 S7)=====
+# Governs how the composed multi-step TARGET loss budget is allocated across
+# feature dims. RLRP-761 `S10`: this is the SINGLE home of the whole policy --
+# the criterion, the semantic and the three bounds. Deliberately NOT part of
+# `ms_model`: it is a training-objective policy resolved from the dataset at the
+# training-start seam, and the model only receives the resolved vectors.
+#
+# Left at the framework defaults here: the math env declares no feature contract
+# (no named dims, no exogenous `dt`), so the named criteria and the exogenous-dt
+# policy are inert unless a criterion is explicitly requested. Shown for
+# discoverability -- uncomment to tune.
+# feature_loss_weights:
+#   feature_weight_min: 0.25   # floor on a resolved weight (mean-relative)
+#   dt_target_weight: 0.0      # target weight of an EXOGENOUS dt dim (contract-resolved)
+#   max_weight_ratio: null     # bound on the resolved-weight RATIO
+#   max_target_share: 0.40     # bound on the realized TARGET-BUDGET share
+#   obs_feature_weights: predictability  # criterion | float | [per-dim]
+#   act_feature_weights: null            # unset -> inherits the obs criterion
+#   feature_weight_mode: multiplicative  # `tempered` is GRADIENT-INERT
+
+# ====Multi-Step model=============================
+
+ms_model: # <- OVERRIDES
+  # model_use_double_precision: true # ⚠️ <--
+  # ar_enabled: true # Compute sequence prediction in auto-regressive manner
+  # receive_sequence_batch: false
+  ensemble_size: 1 # ⚠️ For first paper
+  # distribution_name: gaussian # ⚠️
+
+  activation_fn_cfg:
+    # _target_: torch.nn.Tanh
+    # _target_: torch.nn.ReLU
+    _target_: torch.nn.GELU
+    # _target_: torch.nn.SiLU # Also known as the swish function
+    # _target_: torch.nn.Mish
+
+  # ....Auto set......................................
+  singlestep_obs_len: ${environment.obs_shape[0]} # quickhack
+  singlestep_act_len: ${environment.act_shape[0]} # quickhack
+  in_size: ???
+  out_size: ???
+  device: ${device}

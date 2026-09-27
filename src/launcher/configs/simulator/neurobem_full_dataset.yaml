@@ -1,0 +1,309 @@
+# /////////////////////////////////////////////////////////////////////////////////////////////////
+#
+#                                      NeuroBem Full Dataset
+#
+# Total train_val_trajectories trajectory length: 451304
+# Total test_InD_trajectory trajectory length: 51612
+#
+# /////////////////////////////////////////////////////////////////////////////////////////////////
+name: "neurobem_full_dataset"
+
+defaults:
+  - quadcopter_general
+  - _self_
+
+dataset_name: neurobem
+data_path: data/external_data/long_horizon/data/neurobem/
+
+obs_are_dt_derivatives: true
+obs_time_is_delta_time: true
+
+
+data:
+  label: "Neurobem (full dataset)"
+  linear_velocity_frame: body
+  angular_velocity_frame: body
+  trajectories:
+    # ....From the train directory...........................
+    - trajectory_name: train/merged_2021-02-03-13-43-38_seg_1
+    - trajectory_name: train/merged_2021-02-03-13-43-38_seg_2
+    - trajectory_name: train/merged_2021-02-03-13-43-38_seg_3
+    - trajectory_name: train/merged_2021-02-03-13-43-38_seg_4
+    - trajectory_name: train/merged_2021-02-03-13-44-49_seg_1
+    - trajectory_name: train/merged_2021-02-03-13-44-49_seg_2
+    - trajectory_name: train/merged_2021-02-03-13-44-49_seg_3
+    - trajectory_name: train/merged_2021-02-03-13-44-49_seg_4
+    - trajectory_name: train/merged_2021-02-03-13-53-04_seg_1
+    - trajectory_name: train/merged_2021-02-03-13-53-04_seg_2
+    - trajectory_name: train/merged_2021-02-03-13-54-06_seg_1
+    - trajectory_name: train/merged_2021-02-03-13-54-06_seg_2
+    - trajectory_name: train/merged_2021-02-03-13-54-06_seg_3
+    - trajectory_name: train/merged_2021-02-03-13-54-06_seg_4
+    - trajectory_name: train/merged_2021-02-03-16-10-37_seg_1
+    - trajectory_name: train/merged_2021-02-03-16-10-37_seg_2
+    - trajectory_name: train/merged_2021-02-03-16-10-37_seg_3
+    - trajectory_name: train/merged_2021-02-03-16-10-37_seg_4
+    - trajectory_name: train/merged_2021-02-03-16-12-22_seg_1
+    - trajectory_name: train/merged_2021-02-03-16-12-22_seg_2
+    - trajectory_name: train/merged_2021-02-03-16-12-22_seg_3
+    - trajectory_name: train/merged_2021-02-03-16-12-22_seg_4
+    - trajectory_name: train/merged_2021-02-03-16-45-38_seg_1
+    - trajectory_name: train/merged_2021-02-03-16-45-38_seg_2
+    - trajectory_name: train/merged_2021-02-03-16-47-27_seg_1
+    - trajectory_name: train/merged_2021-02-03-16-47-27_seg_2
+    - trajectory_name: train/merged_2021-02-03-16-54-28_seg_1
+    - trajectory_name: train/merged_2021-02-03-16-54-28_seg_2
+    - trajectory_name: train/merged_2021-02-03-16-54-28_seg_3
+    - trajectory_name: train/merged_2021-02-03-16-54-28_seg_4
+    - trajectory_name: train/merged_2021-02-03-16-55-55_seg_1
+    - trajectory_name: train/merged_2021-02-03-16-55-55_seg_2
+    - trajectory_name: train/merged_2021-02-03-16-55-55_seg_3
+    - trajectory_name: train/merged_2021-02-03-16-58-13_seg_1
+    - trajectory_name: train/merged_2021-02-03-16-58-13_seg_2
+    - trajectory_name: train/merged_2021-02-03-17-04-15_seg_1
+    - trajectory_name: train/merged_2021-02-03-17-04-15_seg_2
+    - trajectory_name: train/merged_2021-02-03-17-04-15_seg_3
+    - trajectory_name: train/merged_2021-02-03-17-04-15_seg_4
+    - trajectory_name: train/merged_2021-02-03-17-06-36_seg_1
+    - trajectory_name: train/merged_2021-02-03-17-14-47_seg_1
+    - trajectory_name: train/merged_2021-02-03-17-14-47_seg_2
+    - trajectory_name: train/merged_2021-02-03-17-26-08_seg_1
+    - trajectory_name: train/merged_2021-02-03-17-26-08_seg_2
+    - trajectory_name: train/merged_2021-02-03-17-33-11_seg_1
+    - trajectory_name: train/merged_2021-02-03-17-33-11_seg_2
+    - trajectory_name: train/merged_2021-02-03-17-37-27_seg_1
+    - trajectory_name: train/merged_2021-02-03-17-37-27_seg_2
+    - trajectory_name: train/merged_2021-02-03-17-37-27_seg_3
+    - trajectory_name: train/merged_2021-02-05-14-00-56_seg_1
+    - trajectory_name: train/merged_2021-02-05-14-00-56_seg_2
+    - trajectory_name: train/merged_2021-02-05-14-01-47_seg_1
+    - trajectory_name: train/merged_2021-02-05-14-01-47_seg_2
+    - trajectory_name: train/merged_2021-02-05-14-01-47_seg_3
+    - trajectory_name: train/merged_2021-02-05-14-02-47_seg_1
+    - trajectory_name: train/merged_2021-02-05-14-02-47_seg_2
+    - trajectory_name: train/merged_2021-02-05-14-02-47_seg_3
+    - trajectory_name: train/merged_2021-02-05-14-03-41_seg_1
+    - trajectory_name: train/merged_2021-02-05-14-03-41_seg_2
+    - trajectory_name: train/merged_2021-02-05-14-03-41_seg_3
+    - trajectory_name: train/merged_2021-02-05-14-03-41_seg_4
+    - trajectory_name: train/merged_2021-02-05-14-04-32_seg_1
+    - trajectory_name: train/merged_2021-02-05-14-04-32_seg_2
+    - trajectory_name: train/merged_2021-02-05-14-19-34_seg_1
+    - trajectory_name: train/merged_2021-02-05-14-19-34_seg_2
+    - trajectory_name: train/merged_2021-02-05-14-19-34_seg_3
+    - trajectory_name: train/merged_2021-02-05-14-24-35_seg_1
+    - trajectory_name: train/merged_2021-02-05-14-24-35_seg_2
+    - trajectory_name: train/merged_2021-02-05-14-24-35_seg_3
+    - trajectory_name: train/merged_2021-02-05-15-04-42_seg_1
+    - trajectory_name: train/merged_2021-02-05-15-04-42_seg_2
+    - trajectory_name: train/merged_2021-02-05-15-04-42_seg_3
+    - trajectory_name: train/merged_2021-02-05-15-40-15_seg_1
+    - trajectory_name: train/merged_2021-02-05-15-40-15_seg_2
+    - trajectory_name: train/merged_2021-02-05-15-46-49_seg_1
+    - trajectory_name: train/merged_2021-02-05-15-46-49_seg_2
+    - trajectory_name: train/merged_2021-02-05-15-46-49_seg_3
+    - trajectory_name: train/merged_2021-02-05-15-56-24_seg_1
+    - trajectory_name: train/merged_2021-02-05-15-56-24_seg_2
+    - trajectory_name: train/merged_2021-02-05-15-56-24_seg_3
+    - trajectory_name: train/merged_2021-02-05-15-58-59_seg_1
+    - trajectory_name: train/merged_2021-02-05-15-58-59_seg_2
+    - trajectory_name: train/merged_2021-02-05-15-58-59_seg_3
+    - trajectory_name: train/merged_2021-02-05-16-06-45_seg_1
+    - trajectory_name: train/merged_2021-02-05-16-06-45_seg_2
+    - trajectory_name: train/merged_2021-02-05-16-06-45_seg_3
+    - trajectory_name: train/merged_2021-02-05-16-06-45_seg_4
+    - trajectory_name: train/merged_2021-02-05-16-10-53_seg_1
+    - trajectory_name: train/merged_2021-02-05-16-10-53_seg_2
+    - trajectory_name: train/merged_2021-02-05-16-14-20_seg_1
+    - trajectory_name: train/merged_2021-02-05-16-14-20_seg_2
+    - trajectory_name: train/merged_2021-02-05-16-16-00_seg_1
+    - trajectory_name: train/merged_2021-02-05-16-16-00_seg_2
+    - trajectory_name: train/merged_2021-02-05-16-16-00_seg_3
+    - trajectory_name: train/merged_2021-02-05-16-19-10_seg_1
+    - trajectory_name: train/merged_2021-02-05-16-19-10_seg_2
+    - trajectory_name: train/merged_2021-02-05-16-29-21_seg_1
+    - trajectory_name: train/merged_2021-02-05-16-29-21_seg_2
+    - trajectory_name: train/merged_2021-02-05-16-29-21_seg_3
+    - trajectory_name: train/merged_2021-02-05-16-29-21_seg_4
+    - trajectory_name: train/merged_2021-02-05-16-31-14_seg_1
+    - trajectory_name: train/merged_2021-02-05-16-31-14_seg_2
+    - trajectory_name: train/merged_2021-02-05-16-31-14_seg_3
+    - trajectory_name: train/merged_2021-02-05-16-31-14_seg_4
+    - trajectory_name: train/merged_2021-02-05-16-33-13_seg_1
+    - trajectory_name: train/merged_2021-02-05-16-33-13_seg_2
+    - trajectory_name: train/merged_2021-02-18-13-44-23_seg_1
+    - trajectory_name: train/merged_2021-02-18-13-44-23_seg_3
+    - trajectory_name: train/merged_2021-02-18-14-15-53_seg_1
+    - trajectory_name: train/merged_2021-02-18-14-15-53_seg_2
+    - trajectory_name: train/merged_2021-02-18-15-47-24_seg_1
+    - trajectory_name: train/merged_2021-02-18-15-47-24_seg_2
+    - trajectory_name: train/merged_2021-02-18-15-47-24_seg_3
+    - trajectory_name: train/merged_2021-02-18-16-08-00_seg_1
+    - trajectory_name: train/merged_2021-02-18-16-08-00_seg_2
+    - trajectory_name: train/merged_2021-02-18-16-08-00_seg_3
+    - trajectory_name: train/merged_2021-02-18-16-08-00_seg_4
+    - trajectory_name: train/merged_2021-02-18-16-31-30_seg_1
+    - trajectory_name: train/merged_2021-02-18-16-31-30_seg_2
+    - trajectory_name: train/merged_2021-02-18-16-31-30_seg_3
+    - trajectory_name: train/merged_2021-02-18-16-41-41_seg_1
+    - trajectory_name: train/merged_2021-02-18-16-41-41_seg_2
+    - trajectory_name: train/merged_2021-02-18-16-43-54_seg_1
+    - trajectory_name: train/merged_2021-02-18-16-43-54_seg_2
+    - trajectory_name: train/merged_2021-02-18-16-43-54_seg_3
+    - trajectory_name: train/merged_2021-02-18-16-43-54_seg_4
+    - trajectory_name: train/merged_2021-02-18-16-47-02_seg_1
+    - trajectory_name: train/merged_2021-02-18-16-47-02_seg_2
+    - trajectory_name: train/merged_2021-02-18-16-47-02_seg_3
+    - trajectory_name: train/merged_2021-02-18-16-48-24_seg_1
+    - trajectory_name: train/merged_2021-02-18-16-48-24_seg_2
+    - trajectory_name: train/merged_2021-02-18-16-53-35_seg_1
+    - trajectory_name: train/merged_2021-02-18-16-55-00_seg_1
+    - trajectory_name: train/merged_2021-02-18-16-55-00_seg_2
+    - trajectory_name: train/merged_2021-02-18-17-03-20_seg_1
+    - trajectory_name: train/merged_2021-02-18-17-05-14_seg_1
+    - trajectory_name: train/merged_2021-02-18-17-05-14_seg_2
+    - trajectory_name: train/merged_2021-02-18-17-05-14_seg_3
+    - trajectory_name: train/merged_2021-02-18-17-05-14_seg_4
+    - trajectory_name: train/merged_2021-02-18-17-06-27_seg_1
+    - trajectory_name: train/merged_2021-02-18-17-09-50_seg_1
+    - trajectory_name: train/merged_2021-02-18-17-12-03_seg_1
+    - trajectory_name: train/merged_2021-02-18-17-19-08_seg_1
+    - trajectory_name: train/merged_2021-02-18-17-20-37_seg_1
+    - trajectory_name: train/merged_2021-02-18-17-28-35_seg_1
+    - trajectory_name: train/merged_2021-02-18-17-28-35_seg_2
+    - trajectory_name: train/merged_2021-02-18-17-42-11_seg_1
+    - trajectory_name: train/merged_2021-02-18-17-42-11_seg_2
+    - trajectory_name: train/merged_2021-02-18-17-42-11_seg_3
+    - trajectory_name: train/merged_2021-02-18-17-44-17_seg_1
+    - trajectory_name: train/merged_2021-02-18-17-47-42_seg_1
+    - trajectory_name: train/merged_2021-02-18-17-48-50_seg_1
+    - trajectory_name: train/merged_2021-02-18-17-48-50_seg_2
+    - trajectory_name: train/merged_2021-02-18-17-48-50_seg_3
+    - trajectory_name: train/merged_2021-02-18-18-02-03_seg_1
+    - trajectory_name: train/merged_2021-02-18-18-03-06_seg_1
+    - trajectory_name: train/merged_2021-02-18-18-03-06_seg_2
+    - trajectory_name: train/merged_2021-02-18-18-09-47_seg_1
+    - trajectory_name: train/merged_2021-02-23-10-43-02_seg_1
+    - trajectory_name: train/merged_2021-02-23-10-43-02_seg_2
+    - trajectory_name: train/merged_2021-02-23-10-43-02_seg_3
+    - trajectory_name: train/merged_2021-02-23-10-43-02_seg_4
+    - trajectory_name: train/merged_2021-02-23-10-48-03_seg_1
+    - trajectory_name: train/merged_2021-02-23-10-48-03_seg_3
+    - trajectory_name: train/merged_2021-02-23-10-50-42_seg_1
+    - trajectory_name: train/merged_2021-02-23-10-50-42_seg_2
+    - trajectory_name: train/merged_2021-02-23-10-52-00_seg_1
+    - trajectory_name: train/merged_2021-02-23-10-52-00_seg_2
+    - trajectory_name: train/merged_2021-02-23-11-31-23_seg_1
+    - trajectory_name: train/merged_2021-02-23-11-31-23_seg_2
+    - trajectory_name: train/merged_2021-02-23-11-31-23_seg_3
+    - trajectory_name: train/merged_2021-02-23-11-31-23_seg_4
+    - trajectory_name: train/merged_2021-02-23-11-41-38_seg_1
+    - trajectory_name: train/merged_2021-02-23-11-41-38_seg_2
+    - trajectory_name: train/merged_2021-02-23-11-41-38_seg_4
+    - trajectory_name: train/merged_2021-02-23-14-21-48_seg_1
+    - trajectory_name: train/merged_2021-02-23-14-21-48_seg_2
+    - trajectory_name: train/merged_2021-02-23-14-24-07_seg_1
+    - trajectory_name: train/merged_2021-02-23-14-29-48_seg_1
+    - trajectory_name: train/merged_2021-02-23-14-29-48_seg_2
+    - trajectory_name: train/merged_2021-02-23-14-33-04_seg_1
+    - trajectory_name: train/merged_2021-02-23-14-33-04_seg_2
+    - trajectory_name: train/merged_2021-02-23-14-41-07_seg_1
+    - trajectory_name: train/merged_2021-02-23-14-41-07_seg_2
+    - trajectory_name: train/merged_2021-02-23-14-41-07_seg_3
+    - trajectory_name: train/merged_2021-02-23-17-27-24_seg_1
+    - trajectory_name: train/merged_2021-02-23-17-27-24_seg_2
+    - trajectory_name: train/merged_2021-02-23-17-27-24_seg_3
+    - trajectory_name: train/merged_2021-02-23-17-35-26_seg_1
+    - trajectory_name: train/merged_2021-02-23-17-45-47_seg_1
+    - trajectory_name: train/merged_2021-02-23-17-45-47_seg_2
+    - trajectory_name: train/merged_2021-02-23-17-45-47_seg_3
+    - trajectory_name: train/merged_2021-02-23-18-38-21_seg_1
+    - trajectory_name: train/merged_2021-02-23-18-38-21_seg_2
+    - trajectory_name: train/merged_2021-02-23-18-38-21_seg_3
+    - trajectory_name: train/merged_2021-02-23-18-43-00_seg_1
+    - trajectory_name: train/merged_2021-02-23-18-43-00_seg_2
+    - trajectory_name: train/merged_2021-02-23-18-50-03_seg_1
+    - trajectory_name: train/merged_2021-02-23-18-50-03_seg_2
+    - trajectory_name: train/merged_2021-02-23-18-50-03_seg_3
+    - trajectory_name: train/merged_2021-02-23-18-50-03_seg_4
+    - trajectory_name: train/merged_2021-02-23-19-04-50_seg_1
+    - trajectory_name: train/merged_2021-02-23-19-04-50_seg_2
+    - trajectory_name: train/merged_2021-02-23-19-04-50_seg_3
+    - trajectory_name: train/merged_2021-02-23-19-15-11_seg_1
+    - trajectory_name: train/merged_2021-02-23-19-15-11_seg_2
+    - trajectory_name: train/merged_2021-02-23-19-15-11_seg_3
+    - trajectory_name: train/merged_2021-02-23-19-26-38_seg_1
+    - trajectory_name: train/merged_2021-02-23-19-26-38_seg_2
+    - trajectory_name: train/merged_2021-02-23-19-26-38_seg_3
+    - trajectory_name: train/merged_2021-02-23-19-33-29_seg_1
+    - trajectory_name: train/merged_2021-02-23-19-33-29_seg_2
+    - trajectory_name: train/merged_2021-02-23-19-33-29_seg_3
+    - trajectory_name: train/merged_2021-02-23-19-45-06_seg_1
+    - trajectory_name: train/merged_2021-02-23-19-45-06_seg_3
+    - trajectory_name: train/merged_2021-02-23-21-52-14_seg_1
+    - trajectory_name: train/merged_2021-02-23-21-52-14_seg_2
+    - trajectory_name: train/merged_2021-02-23-21-57-38_seg_1
+    - trajectory_name: train/merged_2021-02-23-21-57-38_seg_2
+    - trajectory_name: train/merged_2021-02-23-21-57-38_seg_3
+    - trajectory_name: train/merged_2021-02-23-22-03-52_seg_1
+    - trajectory_name: train/merged_2021-02-23-22-03-52_seg_2
+    - trajectory_name: train/merged_2021-02-23-22-03-52_seg_3
+    - trajectory_name: train/merged_2021-02-23-22-19-12_seg_1
+    - trajectory_name: train/merged_2021-02-23-22-19-12_seg_2
+    - trajectory_name: train/merged_2021-02-23-22-19-12_seg_3
+    - trajectory_name: train/merged_2021-02-23-22-26-25_seg_1
+    - trajectory_name: train/merged_2021-02-23-22-26-25_seg_2
+    - trajectory_name: train/merged_2021-02-23-22-26-25_seg_3
+    - trajectory_name: train/merged_2021-02-23-22-33-54_seg_1
+    - trajectory_name: train/merged_2021-02-23-22-33-54_seg_2
+    - trajectory_name: train/merged_2021-02-23-22-33-54_seg_3
+    - trajectory_name: train/merged_2021-02-23-22-33-54_seg_4
+    - trajectory_name: train/merged_2021-02-23-22-41-46_seg_1
+    - trajectory_name: train/merged_2021-02-23-22-41-46_seg_2
+    - trajectory_name: train/merged_2021-02-23-22-41-46_seg_3
+    # ....From the valid directory...........................
+    - trajectory_name: valid/merged_2021-02-18-13-44-23_seg_2
+    - trajectory_name: valid/merged_2021-02-18-16-53-35_seg_2
+    - trajectory_name: valid/merged_2021-02-18-17-03-20_seg_2
+    - trajectory_name: valid/merged_2021-02-18-17-19-08_seg_2
+    - trajectory_name: valid/merged_2021-02-18-17-26-00_seg_1
+    - trajectory_name: valid/merged_2021-02-18-18-08-45_seg_1
+    - trajectory_name: valid/merged_2021-02-23-10-48-03_seg_2
+    - trajectory_name: valid/merged_2021-02-23-11-41-38_seg_3
+    - trajectory_name: valid/merged_2021-02-23-14-21-48_seg_3
+    - trajectory_name: valid/merged_2021-02-23-19-45-06_seg_2
+    - trajectory_name: valid/merged_2021-02-23-22-54-17_seg_1
+
+  test_InD_trajectory:
+    - trajectory_name: test/race_track_2
+      category: S
+    - trajectory_name: test/melon_1
+      category: S
+    - trajectory_name: test/lemniscate_1
+      category: S
+    - trajectory_name: test/race_track_1
+      category: S
+    - trajectory_name: test/lemniscate_2
+      category: M
+    - trajectory_name: test/lemniscate_3
+      category: M
+    - trajectory_name: test/slanted_circle_2
+      category: M
+    - trajectory_name: test/linear_oscillation
+      category: M
+    - trajectory_name: test/slanted_circle_1
+      category: M
+    - trajectory_name: test/ellipse
+      category: M
+    - trajectory_name: test/melon_2
+      category: M
+    - trajectory_name: test/random_points
+      category: L
+
+  test_OOD_trajectory: null
+
+# global_interval_idx: [0, 10001]
+time_space:
+  bound: ???
+  granularity: ???
+# explorable_space: [[0, 8001]] # Not used in robotic env for now

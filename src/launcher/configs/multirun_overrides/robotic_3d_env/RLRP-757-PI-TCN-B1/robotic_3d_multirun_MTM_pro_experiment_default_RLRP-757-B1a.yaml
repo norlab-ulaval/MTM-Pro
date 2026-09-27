@@ -1,0 +1,216 @@
+# @package _global_
+
+# Set the MTM-Pro sub-config version
+# Mute to to discard sub-version
+mtm_pro_cfg_version: B1a # <--
+
+overrides:
+  experiment: ${experiment_super}/${experiment_variation_dir_name}-${oc.select:mtm_pro_cfg_version,"default"}
+
+ms_model:
+
+  model_use_double_precision: false # <-- # ⚠️
+  ensemble_size: 1 # ⚠️ For first paper
+  distribution_name: laplace
+
+  learn_logvar_bounds: true
+  logvar_bound_grad_clip: null
+
+  activation_fn_cfg:
+    # _target_: torch.nn.Mish
+    _target_: torch.nn.GELU # <--
+
+  enable_auto_loss_weighting: true
+  auto_weighting_noise_model: gaussian
+  auto_weighting_scheme: tempered_likelihood
+
+  # `ms_temporal_weighting_mode` (RLRP-769): HOW the temporal discount w_j=gamma^j enters the
+  # per-step NLL + the matching horizon scale. Options:
+  #   log-shift    -> nll_j + log w_j (legacy, former default; gamma gradient-inert, magnitude ~ horizon_len)
+  #   tempered     -> w_j*nll_j, sum_j w_j=1 (convex combo; gamma effective; horizon-scale invariant)
+  #   discounted-sum -> gamma^j*nll_j (raw EMA, w_0=1; gamma effective; magnitude ~ 1/(1-gamma)) [DEFAULT]
+  #   joint        -> sum_j nll_j (exact independent joint NLL; undiscounted)
+  #   uniform-mean -> (1/horizon_len) sum_j nll_j (discount ablated; scale fixed)
+  ms_temporal_weighting_mode: discounted-sum
+  temporal_weights: 0.83 # HPO Aug 29 ★★★
+  # Horizon reduction of the per-step NLLs (only effective for probabilistic losses):
+  #   independent     -> SUM of per-step NLLs, assuming independent steps p(X,Y)=p(X)p(Y) (default);
+  #   prob-sum        -> -logsumexp_j(-nll_j) = -log(sum_j p_j), NLL of prob-space sum p(X)+p(Y)
+  #                      (NOT inter-step dependence; formerly 'dependent', RLRP-704);
+  #   soft-max-energy -> logsumexp_j(E_j) = log Z, Gibbs free energy / log-partition of the per-step
+  #                      energies E_j=nll_j at beta=1 (~= max_j nll_j; energy-function, not a joint NLL);
+  #   energy-density  -> (1/beta) * logsumexp_j(beta * E_j), temperature-controlled energy density /
+  #                      log-partition (free energy) of the Gibbs distribution over horizon steps.
+  ms_probabilities_reduction: independent # <--
+  # # ms_probabilities_reduction: prob-sum
+  # ms_probabilities_reduction: soft-max-energy
+  # ms_probabilities_reduction: energy-density
+  # ms_energy_beta: 1e-2              # explicit fixed inverse temperature beta>0
+  # # ms_energy_beta: learned          # "learned" (default, trainable scalar >0 via softplus) or float>0 (energy-density only)
+  # # # Axis of the ENERGY reductions ('soft-max-energy'/'energy-density'); ignored by independent/prob-sum:
+  # # #   step (default) -> partition over horizon steps; feature -> over the observation/feature dims
+  # # #   (then SUM over horizon); joint -> over the whole (step x feature) lattice. Padded last-step
+  # # #   action slots are masked out. Still an energy functional over a finite index set, NOT a
+  # # #   normalized data-space density.
+  # # ms_energy_axis: step
+  # ms_energy_axis: feature
+  # # ms_energy_axis: joint
+
+  ms_probabilistic_loss_mode: true_mixture # Options: moment_matched, true_mixture
+
+  history_len: 20
+  horizon_len: 10
+  unrol_len: 10
+
+  # # Setup 4: # Trainable params: 2.2 M (with gated_mlp + mix->input_and_index_dependent 1Lx312)
+  # # ... Encoder ..........
+  # num_layers: 3
+  # hid_size: 329
+  # # ... Decoder ..........
+  # ms_head_num_layers: 3
+
+  # # Setup 5: # Trainable params: 2.2 M (with E&D->residual_v2 + mix->input_and_index_dependent 2Lx256)
+  # # ... Encoder ..........
+  # num_layers: 3
+  # hid_size: 362
+  # # ... Decoder ..........
+  # ms_head_num_layers: 3
+
+  # # Setup 6: # Trainable params: 2.2 M (with E->residual_v2 D-> dense + mix->input_and_index_dependent 1Lx312)
+  # # ... Encoder ..........
+  # num_layers: 3
+  # hid_size: 422
+  # # ... Decoder ..........
+  # ms_head_num_layers: 3
+
+  # # Setup 7: # Trainable params: 2.2 M (with E->residual_v2 D-> dense + mix->index)
+  # # ... Encoder ..........
+  # num_layers: 3
+  # hid_size: 456
+  # # ... Decoder ..........
+  # ms_head_num_layers: 3
+
+  # Setup 7a: # Trainable params: 5.1 M (with E->residual_v2 D-> dense + mix->index_dependent)
+  # ... Encoder ..........
+  num_layers: 3
+  hid_size: 744
+  # ... Decoder ..........
+  ms_head_num_layers: 2
+
+  # # Setup 7b: # Trainable params: 5.1 M (with E->residual_v2 D-> dense + mix->input_and_index_dependent 1Lx312)
+  # # ... Encoder ..........
+  # num_layers: 3
+  # hid_size: 728
+  # # ... Decoder ..........
+  # ms_head_num_layers: 2
+
+  # # Setup 7c: # Trainable params: 5.1 M (with gated_mlp + mix->input_and_index_dependent L1X312)
+  # # ... Encoder ..........
+  # num_layers: 3
+  # hid_size: 528
+  # # ... Decoder ..........
+  # ms_head_num_layers: 2
+
+
+  ms_head_dropout: 0.0
+  dropout: 0.0 # <--
+
+  layer_bloc:
+    encoder:
+      type: residual_v2
+      layer_norm: false
+      dropout: 0.0 # <--
+    ms_head:
+      type: dense
+
+
+  single_step_loss:
+    enable: false
+    loss_weight: 10.0
+    auto_weighting: true
+
+  feature_geometry:
+    loss_weight: 68.9 # HPO Aug 29 ★★★
+    loss_objective: chordal # Options: geodesic (default), chordal, null (disable)
+    # RLRP-751: false (default) -> STATIC weighting (scaled by loss_weight); true ->
+    # route the SS/MS/CP feature-geometry channels through the composite uncertainty
+    # auto-weighting (Kendall 2018), with loss_weight as the pre-multiplier. ONE key
+    # controls all three channels (MTM-Pro FEAT_GEOM_SS/MS/CP slots).
+    auto_weighting: true
+  internal_orientation:
+    representation: quaternion # Options: nine_d_svd, sixd, quaternion, quaternion_legacy
+    tangent_nll_right_jacobian: false # false -> 'plain' tangent density
+    manifold_aware_nll: false # <-- RLRP-744 item A: null -> auto (matrix reps ON, quaternion OFF); true -> force ON (quaternion manifold upgrade); false -> force OFF (matrix-rep ablation)
+    # RLRP-744 item C: the plain `quaternion` rep ALWAYS decodes to a unit quaternion
+    # IN-GRAPH by construction (no lever; independent of manifold_aware_nll);
+    # quaternion_legacy keeps the raw un-normalized legacy output.
+    # NOTE: enforce_continuity acts at data ingestion on the raw
+    # quaternion. It affects learning ONLY for the quaternion/quaternion_legacy
+    # reps (raw 4-D input slot); it is mathematically bit-identical (inert, no
+    # conflict) for sixd/nine_d_svd, which encode via SO(3) matrices (R(q)=R(-q)).
+    # RLRP-744 item E: this key ALSO gates the MODEL-SIDE reference-relative attitude
+    # alignment (align_quaternion_slots_to_reference at AR splice/deploy + the DH residual)
+    # via _quaternion_ar_continuity_active, so it governs continuity end-to-end (all reps
+    # except quaternion_legacy). It does NOT affect the in-graph unit decode (item C).
+    enforce_continuity: true # true (default) -> enforce <q_t,q_{t-1}> >= 0 temporal sign continuity; false -> disable
+
+  info_projection_loss:
+    enable: false
+
+  siw_mp_loss:
+    enable: false
+
+  gms_iwae_loss:
+    enable: false
+
+  deploy_head:
+    mode: forecast # Options: forecast, projection
+
+  rollout_consistency_loss:
+    enable: false
+
+  temporal_mixture_weights:
+    kind: index
+    # kind: additive_index_input_and_history_dependent
+    # head_size: 256 # ★★ HPO
+    # num_layers: 2 # ★★ HPO
+    # # dropout: 0.19 # ★★★ HPO
+    # dropout: 0.0
+
+  forecast_teacher_forcing:
+    # method: always_off # Options: linear, exponential, always_on, always_off
+    method: exponential # Options: linear, exponential, always_on, always_off
+    decay_start: 0 # <--
+    decay_stop: 716 # <--
+
+  compounded_prediction_deploy_loss:
+    enable: false
+    loss_weight: 30.0 # HPO Aug 29 ★★★
+    auto_weighting: true # route CP through the composite auto-weighting ("CP" slot)
+    horizon_len: null # Options: null or <int>
+    # horizon_len: 5 # Options: null or <int>
+    # ... Deploy-history drift residual sub-term (DH; RLRP-731) ..................................
+    enable_history_drift_loss: false # <--
+    # history_drift_loss_weight: 84.82 # ★★★★ HPO Jul 24 2026
+    history_drift_loss_weight: 1.0
+    history_drift_auto_weighting: true  # route DH through the composite auto-weighting ("DH" slot)
+    history_drift_target_mode: raw_passthrough # Options: inline_denorm, raw_passthrough (RLRP-731 B4-raw, implemented)
+    # .............................................................................................
+    # Second-AR-stage schedulers / teacher-forcing / temporal-discount (formerly flat ar_* /
+    # teacher_forcing_* kwargs, now grouped here). Mirrors B_gru_probabilistic.yaml 20-33.
+    ar_temporal_weights: 0.988 # HPO Aug 29 ★★★
+    ar_temporal_weights_start: 1.0
+    ar_temporal_weights_warmup: 0
+    ar_temporal_weights_ramp_stop: 0 # 0->Disabled
+    ar_unrol_len_probablity_decay_start: 0
+    ar_unrol_len_probablity_decay_stop: 0 # 0->Disabled
+    ar_unrol_len_decay_method: beta # Options: beta, exponential, linear
+    ar_unrol_len_start_horizon_len: 1  # <-- Short unroll length the curriculum grows from
+    teacher_forcing_decay_start: 0 # warmup phase
+    teacher_forcing_decay_stop: 2000 # Options: abs stop step (>decay_start), 0->Disabled, -1->always_on
+    teacher_forcing_method: always_off # Options: linear, exponential, always_on, always_off
+
+
+  train_time_domain_randomization:
+    enable: false
+

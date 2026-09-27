@@ -1,0 +1,141 @@
+#
+# General, model-agnostic quick dev/debug setup: only keys shared by EVERY `ms_model` family are set
+# here. Family-specific quick setups (family-only constructor kwargs, matching pipeline knobs):
+#   - MTM-Pro (`unrol_len`, ensemble)          -> dev/math_env_debug_mtm_pro.yaml
+#   - CP / AR baselines (AR-TCN, `ar_*`)       -> dev/math_env_debug_cp_ar_tcn.yaml
+#   - MS2MS baselines (asymmetric H < F, RLRP-824) -> dev/math_env_debug_ms2ms_e2e_tcn.yaml,
+#                                                  dev/math_env_debug_ms2ms_m3.yaml
+#
+# Usage:
+#   >>> python3.8 math_env_main.py +dev@_global_=math_env_debug
+#
+
+defaults:
+  # Note: use "... /simulator..." instead of "... simulator..." since dev/math_env_debug.yaml
+  #  is called from config group 'dev' which is on same lvl as config group 'environment'
+  # - override /simulator@environment: linear_debug_system # Dev ⚒︎
+  # - override /simulator@environment: linear_spiral_v1_1x_single_initial_condition_noise_free
+  - override /simulator@environment: lorenz_v6_5XinitC_low_global_noise # standalone release: the paper Lorenz configuration
+  - _self_
+
+# ....Debug override...............................
+# seed: 33333
+debug_mode: false
+
+overrides:
+  experiment: "DEBUG"
+
+pipeline:
+  # RLRP-786: dev/debug overlay -> every training-step diagnostic ON (the experiment / HPO pipelines run `fast`).
+  performance_mode: dev
+  steps:
+    single_step_model_learning: false # <--
+    multi_step_model_learning: true
+    metric_step: false # <--
+    test_rollout_InD: true
+    test_rollout_OOD: true
+  plot:
+    show_environment_plot: false
+    # figdpi: 100 # matplotlib defaut is dpi=100
+    # uncertainty_scaling: 2 # default to 2
+    # figsize: [35,18]
+    # figsize: [46,24]
+    # figsize: [52,27]
+    # figsize: [70,36]
+
+  tensorboard:
+    # batch_callback_execute_every_n: 10 # Option: <int>, null -> disabled batch callback
+    clear_tmp_directory_run_artifact_on_teardown: false
+
+
+hparam_optimizer:
+  sweep_optimizer_dryrun: false
+
+# source_replay_buffer:
+#   source_size: 4800
+#   val_ratio: 0.2
+
+# environment:
+#   obs_are_dt_derivatives: true # ⚠️
+#   obs_time_is_delta_time: true # ⚠️
+#   # env_rnd_instances: 2
+
+UDER:
+  # replay_buffer_size:
+  #   init_value: 3840
+  #   gamma: 0.9
+  #   floor: 3840
+  #   gamma_out: 1.11
+  #   out_epoch: 15
+  #   out_value: 3840
+  batch_size:
+    init_value: 500
+    # init_value: 200
+    # limit: 1000
+    # init_value: 200
+    limit: 500
+    # limit: 200
+    gamma: 1.07 # For 200->500 in 20 epoch
+
+  # uder_num_epoch_init_override: 2
+  # uder_num_epochs: 2
+  # num_epochs_train_model: 20
+  # uder_num_epochs: 3
+  # num_epochs_train_model: 30
+  # uder_num_epochs: 4
+  uder_num_epochs: 2
+  num_epochs_train_model: 6
+  final_max_num_epochs_train_model: 4
+  # final_max_num_epochs_train_model: 10
+
+training_common:
+  model_lr: 2.5e-4 # ★ <--
+  # model_lr: 1e-4 # Default 1e-4 ★
+  model_wd: 1e-3
+  # model_wd: 5e-5 # Default 5e-5
+
+one_dim_transition_model:
+  normalize: true # <--
+  # normalize_double_precision: null  # Auto-detected from model precision
+
+# ToDo: mute when done >> next bloc ↓↓
+# ss_model: # <- OVERRIDES
+#   num_layers: 1
+#   hid_size: 8
+
+# ToDo: mute when done >> next bloc ↓↓
+ms_model: # <- OVERRIDES
+  # model_use_double_precision: false # ⚠️
+
+  # ensemble_size: 1 # ⚠️ tmp
+
+  # dropout: 0.01 # To prevent overfitting with linear_debug_system which as no noise
+
+  # ar_temporal_weights: 0.95
+  # ar_temporal_weights_start: 1.02
+  # ar_temporal_weights_warmup: 100
+  # ar_temporal_weights_ramp_stop: 500
+  # ar_unrol_len_probablity_decay_start: 100
+  # ar_unrol_len_probablity_decay_stop: 500
+  # # ar_unrol_len_decay_method: beta # Options: beta, exponential, linear
+  # teacher_forcing_decay_start: 100
+  # teacher_forcing_decay_stop: 500 # Options: abs stop step (>decay_start) or -1 for always_on
+  # # teacher_forcing_method: linear # Options: linear, exponential, always_on, always_off
+
+  # ....Multistep....................................
+  # dropout: 0.1 # ★
+  # temporal_weights: 0.9
+  # history_len: 40
+  # horizon_len: 20
+  # horizon_len: 40
+  # history_len: 22
+  # horizon_len: 22
+  history_len: 13
+  horizon_len: 6
+  # unrol_len: 3
+
+  # .... Model architecture ..........................
+  num_layers: 1
+  hid_size: 32
+  # hid_size: 12
+  # decoder_hid_size: 9 # Options: int > 0, -1 match out_size or -2 match hid_size

@@ -1,0 +1,43 @@
+# /////////////////////////////////////////////////////////////////////////////////////////////////
+#
+#      Husky gravel and grass -- SMOKE TEST subset of the released (online, 6-D velocity) dataset
+#
+# Standalone release helper: a strict subset of the trajectories of
+# `husky_gravel_and_grass_full_dataset_vel_only_online` (the paper configuration) so that
+# `scripts/smoke_test.bash` can exercise the UGV pipeline end-to-end in a few minutes on CPU without
+# any extra data. Not a paper configuration.
+#
+# /////////////////////////////////////////////////////////////////////////////////////////////////
+name: "husky_gravel_and_grass_smoke_test_vel_only_online"
+
+defaults:
+  - husky_gravel_and_grass_full_dataset_vel_only_online
+  - _self_
+
+data:
+  label: "Husky gravel and grass (smoke test subset, online, velocity obs only)"
+  trajectories:
+    - trajectory_name:  train/drive_grass_grand_axe__1__geofence_creation_state
+    - trajectory_name:  train/drive_grass_grand_axe__2__ready_state
+    - trajectory_name:  train/drive_grass_grand_axe__3__running_state
+    - trajectory_name:  train/drive_grass_grand_axe__4__back_to_geofence_state
+    - trajectory_name:  train/drive_grass_grand_axe__5__running_state
+    - trajectory_name:  train/drive_grass_grand_axe__6__back_to_geofence_state
+    - trajectory_name:  train/drive_grass_grand_axe__7__running_state
+    - trajectory_name:  train/drive_grass_grand_axe__8__back_to_geofence_state
+    - trajectory_name:  train/drive_gravel_pit_casault__1__geofence_creation_state
+    - trajectory_name:  train/drive_gravel_pit_casault__4__back_to_geofence_state
+    - trajectory_name:  train/drive_gravel_pit_casault__5__running_state
+    - trajectory_name:  train/drive_gravel_pit_casault__6__back_to_geofence_state
+    - trajectory_name:  train/drive_gravel_pit_casault__7__back_to_geofence_state
+    - trajectory_name:  train/drive_gravel_pit_casault__8__running_state
+
+  test_InD_trajectory:
+    - trajectory_name: nominal_test_set/drive_grass_grand_axe__10__back_to_geofence_state
+      category: S
+    - trajectory_name: nominal_test_set/drive_grass_grand_axe__9__running_state
+      category: L
+    - trajectory_name: nominal_test_set/drive_gravel_pit_casault__2__ready_state
+      category: M
+
+  test_OOD_trajectory: null

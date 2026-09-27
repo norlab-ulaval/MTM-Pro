@@ -1,0 +1,129 @@
+
+# ====================================================
+#      Model type: MS->MS forecast baseline (RLRP-693)
+#
+#                        ★
+#              M3 (Multi-step Model)
+#     Asadi et al. (arXiv:1905.13320) T_j(s_t, a^j)
+#
+# ====================================================
+#
+# PAPER-FAITHFUL since RLRP-821 (see rlrp-821-m3-paper-faithful-plan-20260911.md).
+# The model is now, UNCONDITIONALLY (no flag, no legacy path):
+#   * SINGLE-STATE conditioned -- each map sees ONE observation o_t (the paper's Markov state
+#     s_t), not the flattened H-step history (the ex operator decision Q-G);
+#   * indexed by the LOOK-AHEAD DEPTH -- the family is {T_j}_{j=1..F} with F == horizon_len
+#     ("one map per forecast step", as in the paper), not {T_h}_{h=1..H} over the buffer window;
+#   * trained on the FORECAST STEPS ONLY -- the leading H-F composed-window steps are the
+#     observed-history echo and are MASKED OUT of the loss, so the objective no longer loses a
+#     (H-F)/H fraction to re-predicting already-observed timesteps.
+# The H-step input/output sequence length is unchanged: it is the shared replay-buffer contract,
+# and paper fidelity is achieved INTERNALLY (decision KD1).
+#
+# ⚠️ ALL pre-RLRP-821 M3 checkpoints, metrics and sweep-arm outputs are VOID and must be re-run:
+#    the per-map input width and the family size both changed, so a checkpoint load fails loud
+#    (by design -- no migration shim).
+# ⚠️ target_is_delta must stay FALSE for the test-time forecast head
+#    (`forecast_open_loop_per_horizon` raises NotImplementedError in delta mode).
+
+_target_: tools.multistep_tools.models.MS2MSMultiStepModel
+description: "M3 multi-step model (horizon-indexed MS->MS forecast baseline)"
+
+# Deterministic single net is intrinsic to this baseline (deterministic is hard-fixed in the
+# model; not exposed here).
+ensemble_size: 1 # model-ensemble not supported (deterministic single net); only 1 is valid
+mae_loss: true
+propagation_method: null
+# Option: expectation, fixed_model, random_model, null
+
+# ....Multistep....................................
+# RLRP-821: `horizon_len` (F) is now BOTH the forecast horizon AND the family size -- there are
+# exactly F maps {T_j}. F < H is legitimate again (it no longer dilutes the objective nor spends
+# family capacity on the observed past); the H-F leading window steps are echoed + masked.
+history_len: 20
+horizon_len: 10 # forecast horizon slice (trailing portion of the H-step forecast) == family size
+
+# Realisation of the paper's family {T_j} (RLRP-729; ex operator decision Q-H).
+#   false           -> ONE shared net conditioned on the forecast index j. Parameter-efficient,
+#                      but the weight tying across horizons IS a capacity and inductive-bias
+#                      reduction w.r.t. the paper -- caption it as such, it is NOT an equivalence.
+#   true  (default) -> the paper's LITERAL definition: F INDEPENDENT maps T_j (Asadi et al.,
+#                      arXiv:1905.13320, "different functions" -- one per look-ahead depth),
+#                      sharing no weights.
+# ⚠️ true multiplies the trainable parameter count by ~F (F = horizon_len = 10 here, RLRP-821 --
+#    it was ~H before the paper-fidelity fix) and each map only sees 1/F of the horizon queries
+#    per batch => more capacity, less sample efficiency.
+#    Checkpoints are NOT interchangeable between the two realisations.
+# ⚠️ true requires F >= 2 (a single-member family makes the two realisations coincide): a
+#    horizon_len: 1 arm must set per_horizon_heads: false.
+per_horizon_heads: true
+
+# Vectorized family forward (RLRP-824 Step 7, profiling-gated: the per-horizon Python loop
+# dominates the per-batch time on every ULH dataset row -- 4.7 ms per horizon step, i.e. ~4.7 s
+# per batch at F=1000). true => the SHARED net (per_horizon_heads: false) is evaluated once over
+# the stacked F horizon queries instead of F sequential launches. Same weights, same math up to
+# floating-point reassociation (allclose, NOT bit-exact). Default false keeps the loop
+# byte-for-byte. ⚠️ Incompatible with per_horizon_heads: true (fails fast).
+vectorized_family_forward: false
+
+# Future-action-plan conditioning (RLRP-781 / RLRP-790).
+#   true (default) -> the model is TRAINED and evaluated on the plan a_{t+1..t+F-1};
+#   false           -> the true plan-FREE BASELINE: no plan at train time, and a plan supplied at
+#                      test time is REJECTED (fail-fast) instead of silently conditioning.
+# ⚠️ A test-time `obs_only` rollout of a plan-TRAINED model is a DEPRIVATION ABLATION, not a
+# plan-free baseline: the two are different experiments and need separate training runs.
+enable_future_action_plan_conditioning: true
+
+# Mixed precision (RLRP-824 Step 7, FR9). Opt-in `torch.autocast` around the Lightning
+# training_step / validation_step (forward + loss only; parameters, optimizer state and the
+# backward stay in the model dtype). Options: null (default, bit-exact fp32/fp64 path) | bf16 | fp16.
+# FR15 profiling gate (Jetson Orin, every dataset row): bf16 = 2.5-3.5x on E2E-TCN (GO, the
+# documented ULH opt-in); NO-GO on the M3 per-horizon LOOP (dispatch-bound, bf16 was slower) --
+# re-evaluate with `vectorized_family_forward: true`. fp16 runs WITHOUT a GradScaler (CUDA only).
+mixed_precision: null
+
+# ... Horizon-indexed MLP ..........
+num_layers: 4
+hid_size: 200
+
+# ... MS head ..........
+ms_head_num_layers: 1
+ms_head_dropout: 0.0
+residual_form: identity_v2
+
+# Per-region layer-bloc selector (RLRP-768; superset of `residual_form`). null
+# (default) -> encoder/hidden -> residual_v2; every other region (decoder,
+# ms_head, ss_head, mixture, projection, probabilistic_head) -> dense. Override
+# per region with {type, layer_norm, dropout}; type in {residual_v2,
+# residual_legacy, dense, gated_mlp}; gated_mlp + layer_norm legal ONLY in
+# encoder/hidden. `residual_form` stays a working alias (encoder/hidden variant only).
+layer_bloc: null
+
+activation_fn_cfg:
+  _target_: torch.nn.GELU
+
+# ====General======================================
+dropout: 0.0
+model_use_double_precision: false # ⚠️
+
+singlestep_obs_len: ??? # quickhack
+singlestep_act_len: ??? # quickhack
+# RLRP-736: per-feature geometry loss weight (0.0 -> OFF / bit-exact legacy loss).
+# Set > 0 to enable the orientation-aware geodesic term for envs whose feature
+# handler defines a quaternion group (robotic-3D UGV/UAV); no effect for the
+# neutral math-env handler.
+feature_geometry:
+  loss_weight: 0.0
+  loss_objective: null # Options: geodesic (default), chordal, null (disable)
+  # RLRP-751: false (default) -> STATIC weighting (scaled by loss_weight, legacy
+  # behaviour); true -> route the SS/MS/CP feature-geometry channels through the
+  # composite uncertainty auto-weighting (Kendall 2018), with loss_weight as the
+  # pre-multiplier. ONE key controls all three channels; gracefully degrades to
+  # STATIC on families without an (enabled) composite auto-weighting module.
+  auto_weighting: false
+
+
+
+device: ${device}
+in_size: ???
+out_size: ???
