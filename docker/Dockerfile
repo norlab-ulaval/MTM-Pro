@@ -5,8 +5,9 @@
 # The image mirrors the python environment of the research container the paper experiments were run in
 # (Ubuntu 22.04, Python 3.10, PyTorch, hydra) without any lab specific tooling. GPU support comes from the
 # CUDA libraries bundled in the PyTorch wheels + the NVIDIA container toolkit on the host
-# (`docker compose --profile gpu ...`). The `utilities/*` git submodules MUST be checked out
-# (`git submodule update --init --recursive`) before building.
+# (`docker compose --profile gpu ...`). The three norlab/RedLeader962 python packages (mbrl-lib fork,
+# math-gymnasium, trajectory-container-tools) are installed from their git repositories, at the
+# revision declared in `pyproject.toml`.
 #
 # Build from the repository root:
 #   $ docker compose -f docker/docker-compose.yaml build
@@ -51,27 +52,20 @@ RUN python -m pip install -r /tmp/requirements.txt
 COPY docker/rclpy_shim /tmp/rclpy_shim
 RUN python -m pip install --no-deps /tmp/rclpy_shim && rm -rf /tmp/rclpy_shim
 
-# ....Project (source + submodules)................................................................
+# ....Norlab python packages (from git)............................................................
+# Same requirements as `pyproject.toml` (their third party dependencies are already installed above).
+RUN python -m pip install --no-deps \
+        "mbrl @ git+https://github.com/RedLeader962/mbrl-lib.git" \
+        "math-gymnasium @ git+https://github.com/norlab-ulaval/math-gymnasium.git" \
+        "trajectory-container-tools @ git+https://github.com/norlab-ulaval/trajectory-container-tools.git"
+
+# ....Project (source)............................................................................
 WORKDIR ${MTM_PRO_PATH}
 COPY . ${MTM_PRO_PATH}/
+RUN python -m pip install --no-deps --editable . --config-settings editable_mode=compat
 
-RUN <<EOF
-set -e
-test -f utilities/mbrl-lib/pyproject.toml \
-  && test -f utilities/math-gymnasium/pyproject.toml \
-  && test -f utilities/trajectory-container-tools/pyproject.toml \
-  || { echo "ERROR: git submodules are not checked out. Run: git submodule update --init --recursive"; exit 1; }
-
-# Submodules (editable, dependencies already installed above)
-python -m pip install --no-deps --editable utilities/mbrl-lib --config-settings editable_mode=compat
-python -m pip install --no-deps --editable utilities/trajectory-container-tools --config-settings editable_mode=compat
-python -m pip install --no-deps --editable utilities/math-gymnasium --config-settings editable_mode=compat
-# MTM-Pro itself
-python -m pip install --no-deps --editable . --config-settings editable_mode=compat
-EOF
-
-# src-layout packages: make the `src/` directories importable independently of the editable install
-ENV PYTHONPATH=${MTM_PRO_PATH}/src:${MTM_PRO_PATH}/utilities/math-gymnasium/src:${MTM_PRO_PATH}/utilities/trajectory-container-tools/src:${MTM_PRO_PATH}/utilities/mbrl-lib
+# src-layout package: make the `src/` directory importable independently of the editable install
+ENV PYTHONPATH=${MTM_PRO_PATH}/src
 
 # ....Sanity check.................................................................................
 RUN python -c 'import torch, hydra, omegaconf, mbrl, math_gymnasium, pypose, h5py' \

@@ -1,6 +1,6 @@
 # MTM-Pro standalone docker compose
 #
-# Usage (from the repository root, after `git submodule update --init --recursive`):
+# Usage (from the repository root):
 #
 #   # Build the image
 #   $ docker compose -f docker/docker-compose.yaml build

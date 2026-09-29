@@ -1,5 +1,5 @@
-# Third party python requirements of MTM-Pro and of its `utilities/*` submodules
-# (torch/torchvision/numpy are installed first in the Dockerfile).
+# Third party python requirements of MTM-Pro and of its git dependencies (mbrl-lib fork, math-gymnasium,
+# trajectory-container-tools). torch/torchvision/numpy are installed first in the Dockerfile.
 pandas
 scipy
 pypose

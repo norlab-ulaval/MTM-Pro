@@ -31,11 +31,12 @@ MTM-Pro/
 │   │   ├── long_horizon/data/pi_tcn     UAV PI-TCN
 │   │   └── ugv/husky_dataset_src/...    UGV Husky (gravel and grass, online split)
 │   └── data_consolidated/     the numeric series behind every paper figure (csv + provenance meta.txt)
-├── utilities/                 git submodules: mbrl-lib (fork), math-gymnasium, trajectory-container-tools
 └── artifact/                  experiment outputs (created at runtime, VCS ignored)
 ```
 
-The Lorenz attractor data is generated on the fly (`utilities/math-gymnasium`).
+The Lorenz attractor data is generated on the fly ([math-gymnasium](https://github.com/norlab-ulaval/math-gymnasium)).
+The three norlab / fork python packages the code depends on (mbrl-lib fork, math-gymnasium,
+trajectory-container-tools) are pulled from their git repositories at build time (see `pyproject.toml`).
 
 ## Quick start
 
@@ -45,7 +46,6 @@ Requirements: `git`, `docker` (>= 24, with the compose plugin). NVIDIA GPU runs 
 ```bash
 git clone <this repository> MTM-Pro          # the directory MUST be named MTM-Pro
 cd MTM-Pro
-git submodule update --init --recursive
 
 # 1. Build the image (~10-20 min, downloads PyTorch)
 docker compose -f docker/docker-compose.yaml build
@@ -54,7 +54,7 @@ docker compose -f docker/docker-compose.yaml build
 #    with tiny models and 2 epochs
 docker compose -f docker/docker-compose.yaml run --rm mtm-pro bash /opt/MTM-Pro/scripts/smoke_test.bash quick
 
-# 3. A paper experiment (all 4 seeds of one model on one dataset), on GPU
+# 3. A paper experiment (launch training, 4 seeds at the time, of one model on one dataset), on GPU
 docker compose -f docker/docker-compose.yaml run --rm mtm-pro-gpu bash /opt/MTM-Pro/scripts/run_experiment.bash lorenz mtm-pro-ms+cp
 ```
 
@@ -147,10 +147,11 @@ appending, e.g., `+dev@_global_=math_env_debug_mtm_pro ms_model.ensemble_size=1 
   [long-horizon-dynamics](https://github.com/arplaboratory/long-horizon-dynamics) codebase of *Learning Long-Horizon
   Predictions for Quadrotor Dynamics* (IROS 2024), see `src/tools/baseline_models/README.md`. Every model of the
   paper (MTM-Pro and the AR / MS baselines) is wrapped in `src/tools/multistep_tools/models/`.
-- `utilities/mbrl-lib` is a fork of Facebook Research's [MBRL-Lib](https://github.com/facebookresearch/mbrl-lib)
-  (MIT license).
+- [RedLeader962/mbrl-lib](https://github.com/RedLeader962/mbrl-lib) is a fork of Facebook Research's
+  [MBRL-Lib](https://github.com/facebookresearch/mbrl-lib) (MIT license).
 
 ## License
 
-See the `LICENSE` file of each submodule for the third-party code. The MTM-Pro source code is released for
-review purposes; a license will be attached to the de-anonymized release.
+See the `LICENSE` file of each third-party dependency (mbrl-lib fork, math-gymnasium,
+trajectory-container-tools) for the third-party code. The MTM-Pro source code is released for review
+purposes; a license will be attached to the de-anonymized release.

@@ -27,11 +27,10 @@ classifiers = [
 ]
 
 # Note: the runtime environment is defined by `docker/Dockerfile` + `docker/requirements.txt`.
-# The three `utilities/*` git submodules (mbrl-lib fork, math-gymnasium, trajectory-container-tools)
-# are installed in editable mode by the Dockerfile (`pip install --no-deps --editable .` for MTM-Pro
-# itself, so the git requirements below are NOT resolved there and never override the editable
-# installs). They are declared for a plain `pip install .` outside docker: the packages are not
-# published on PyPI yet, so they are pulled from git.
+# The three git requirements below (mbrl-lib fork, math-gymnasium, trajectory-container-tools) are
+# pulled from git (default branch). The Dockerfile installs the same
+# three requirements explicitly (`--no-deps`, their third party dependencies come from
+# `docker/requirements.txt`) before installing MTM-Pro itself with `pip install --no-deps --editable .`.
 dependencies = [
     "trajectory-container-tools[ros,dev] @ git+https://github.com/norlab-ulaval/trajectory-container-tools.git",
     "math-gymnasium[dev] @ git+https://github.com/norlab-ulaval/math-gymnasium.git",
